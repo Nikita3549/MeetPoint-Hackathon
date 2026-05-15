@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { setupSwagger, SWAGGER_PATH } from './swagger';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -19,8 +20,11 @@ async function bootstrap() {
         exclude: ['health'],
     });
 
+    setupSwagger(app);
+
     const port = process.env.API_PORT ?? process.env.PORT ?? 3000;
     await app.listen(port);
     console.log(`App is running on port ${port}`);
+    console.log(`Swagger: http://localhost:${port}/${SWAGGER_PATH}`);
 }
 bootstrap();
