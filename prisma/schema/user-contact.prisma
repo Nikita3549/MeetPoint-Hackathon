@@ -1,0 +1,19 @@
+enum ContactType {
+  TELEGRAM
+  EMAIL
+  PHONE
+}
+
+model UserContact {
+  id        String      @id @default(uuid())
+  userId    String      @map("user_id")
+  type      ContactType
+  value     String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@unique([userId, type, value])
+  @@index([userId])
+  @@map("user_contacts")
+}

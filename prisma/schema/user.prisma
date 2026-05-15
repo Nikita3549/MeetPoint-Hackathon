@@ -28,6 +28,7 @@ model User {
   deletedAt DateTime? @map("deleted_at")
 
   tags                Tag[]
+  contacts            UserContact[]
   organizedEvents     Event[]
   eventParticipations EventParticipant[]
 
