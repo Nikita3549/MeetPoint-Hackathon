@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateEventDto } from './dto/create-event.dto';
+import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { generateEventSlug } from './utils/generate-event-slug';
@@ -73,6 +74,52 @@ export class EventsService {
         }
 
         return this.toResponse(event);
+    }
+
+    async register(
+        user: AuthenticatedUser,
+        eventId: string,
+    ): Promise<EventRegistrationResponseDto> {
+        const event = await this.prisma.event.findUnique({
+            where: { id: eventId },
+            select: { id: true },
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        const participant = await this.prisma.eventParticipant.upsert({
+            where: {
+                userId_eventId: {
+                    userId: user.id,
+                    eventId,
+                },
+            },
+            create: {
+                userId: user.id,
+                eventId,
+            },
+            update: {},
+        });
+
+        return this.toRegistrationResponse(participant);
+    }
+
+    async registerBySlug(
+        user: AuthenticatedUser,
+        slug: string,
+    ): Promise<EventRegistrationResponseDto> {
+        const event = await this.prisma.event.findUnique({
+            where: { slug },
+            select: { id: true },
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        return this.register(user, event.id);
     }
 
     async create(
@@ -151,6 +198,20 @@ export class EventsService {
         return {
             ...event,
             joinUrl: this.buildJoinUrl(event.slug),
+        };
+    }
+
+    private toRegistrationResponse(participant: {
+        id: string;
+        eventId: string;
+        userId: string;
+        createdAt: Date;
+    }): EventRegistrationResponseDto {
+        return {
+            id: participant.id,
+            eventId: participant.eventId,
+            userId: participant.userId,
+            registeredAt: participant.createdAt,
         };
     }
 

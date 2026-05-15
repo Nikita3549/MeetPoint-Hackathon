@@ -22,6 +22,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateEventDto } from './dto/create-event.dto';
+import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventSlugPipe } from './pipes/event-slug.pipe';
@@ -50,6 +51,17 @@ export class EventsController {
         return this.eventsService.findBySlug(slug);
     }
 
+    @Post('slug/:slug/register')
+    @ApiOperation({ summary: 'Register for event by join link code' })
+    @ApiCreatedResponse({ type: EventRegistrationResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    registerBySlug(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('slug', EventSlugPipe) slug: string,
+    ): Promise<EventRegistrationResponseDto> {
+        return this.eventsService.registerBySlug(user, slug);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get event by id' })
     @ApiOkResponse({ type: EventResponseDto })
@@ -58,6 +70,17 @@ export class EventsController {
         @Param('id', ParseUUIDPipe) id: string,
     ): Promise<EventResponseDto> {
         return this.eventsService.findOne(id);
+    }
+
+    @Post(':id/register')
+    @ApiOperation({ summary: 'Register for event' })
+    @ApiCreatedResponse({ type: EventRegistrationResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    register(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+    ): Promise<EventRegistrationResponseDto> {
+        return this.eventsService.register(user, id);
     }
 
     @Post()
