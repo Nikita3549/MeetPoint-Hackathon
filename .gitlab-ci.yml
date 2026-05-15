@@ -1,0 +1,11 @@
+deploy:
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - printf "%b\n" "$CI_BACKEND_SSH_KEY" > ~/.ssh/id.pem
+    - chmod 600 ~/.ssh/id.pem
+  script:
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id.pem ubuntu@130.193.43.223 "cd backend-prod && docker compose up -d"
+  only:
+    - main
