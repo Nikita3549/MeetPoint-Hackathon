@@ -1,0 +1,208 @@
+import {
+    ForbiddenException,
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
+import { CreateEventDto } from './dto/create-event.dto';
+import { EventResponseDto } from './dto/event-response.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
+import { generateEventSlug } from './utils/generate-event-slug';
+
+const eventInclude = {
+    organizer: {
+        select: {
+            id: true,
+            fullName: true,
+        },
+    },
+    tags: {
+        select: {
+            id: true,
+            name: true,
+        },
+        orderBy: {
+            name: 'asc' as const,
+        },
+    },
+} satisfies Prisma.EventInclude;
+
+type EventWithRelations = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
+
+@Injectable()
+export class EventsService {
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly configService: ConfigService,
+    ) {}
+
+    async findAll(): Promise<EventResponseDto[]> {
+        const events = await this.prisma.event.findMany({
+            include: eventInclude,
+            orderBy: { date: 'asc' },
+        });
+
+        return events.map((event) => this.toResponse(event));
+    }
+
+    async findOne(id: string): Promise<EventResponseDto> {
+        const event = await this.prisma.event.findUnique({
+            where: { id },
+            include: eventInclude,
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        return this.toResponse(event);
+    }
+
+    async findBySlug(slug: string): Promise<EventResponseDto> {
+        const event = await this.prisma.event.findUnique({
+            where: { slug },
+            include: eventInclude,
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        return this.toResponse(event);
+    }
+
+    async create(
+        user: AuthenticatedUser,
+        dto: CreateEventDto,
+    ): Promise<EventResponseDto> {
+        const tagIds = await this.resolveTagIds(dto.tags);
+        const slug = await this.generateUniqueSlug();
+
+        const event = await this.prisma.event.create({
+            data: {
+                slug,
+                title: dto.title,
+                date: new Date(dto.date),
+                description: dto.description,
+                organizerId: user.id,
+                tags: {
+                    connect: tagIds.map((id) => ({ id })),
+                },
+            },
+            include: eventInclude,
+        });
+
+        return this.toResponse(event);
+    }
+
+    async update(
+        user: AuthenticatedUser,
+        id: string,
+        dto: UpdateEventDto,
+    ): Promise<EventResponseDto> {
+        const event = await this.prisma.event.findUnique({
+            where: { id },
+            select: { organizerId: true },
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        if (event.organizerId !== user.id) {
+            throw new ForbiddenException();
+        }
+
+        const data: Prisma.EventUpdateInput = {};
+
+        if (dto.title !== undefined) {
+            data.title = dto.title;
+        }
+
+        if (dto.date !== undefined) {
+            data.date = new Date(dto.date);
+        }
+
+        if (dto.description !== undefined) {
+            data.description = dto.description;
+        }
+
+        if (dto.tags !== undefined) {
+            const tagIds = await this.resolveTagIds(dto.tags);
+            data.tags = {
+                set: tagIds.map((tagId) => ({ id: tagId })),
+            };
+        }
+
+        const updated = await this.prisma.event.update({
+            where: { id },
+            data,
+            include: eventInclude,
+        });
+
+        return this.toResponse(updated);
+    }
+
+    private toResponse(event: EventWithRelations): EventResponseDto {
+        return {
+            ...event,
+            joinUrl: this.buildJoinUrl(event.slug),
+        };
+    }
+
+    private buildJoinUrl(slug: string): string {
+        const baseUrl = this.configService
+            .get<string>('APP_PUBLIC_URL')
+            ?.replace(/\/$/, '');
+
+        if (!baseUrl) {
+            return `/e/${slug}`;
+        }
+
+        return `${baseUrl}/e/${slug}`;
+    }
+
+    private async generateUniqueSlug(): Promise<string> {
+        for (let attempt = 0; attempt < 20; attempt++) {
+            const slug = generateEventSlug();
+            const existing = await this.prisma.event.findUnique({
+                where: { slug },
+                select: { id: true },
+            });
+
+            if (!existing) {
+                return slug;
+            }
+        }
+
+        throw new InternalServerErrorException('Failed to generate event link');
+    }
+
+    private async resolveTagIds(tagNames: string[]): Promise<string[]> {
+        const uniqueNames = [
+            ...new Set(
+                tagNames.map((name) => name.trim()).filter((name) => name.length > 0),
+            ),
+        ];
+
+        if (uniqueNames.length === 0) {
+            return [];
+        }
+
+        const tags = await Promise.all(
+            uniqueNames.map((name) =>
+                this.prisma.tag.upsert({
+                    where: { name },
+                    create: { name },
+                    update: {},
+                }),
+            ),
+        );
+
+        return tags.map((tag) => tag.id);
+    }
+}

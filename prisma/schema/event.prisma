@@ -1,0 +1,16 @@
+model Event {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  date        DateTime
+  description String
+  organizerId String   @map("organizer_id")
+  organizer   User     @relation(fields: [organizerId], references: [id])
+  tags        Tag[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([organizerId])
+  @@index([date])
+  @@map("events")
+}
