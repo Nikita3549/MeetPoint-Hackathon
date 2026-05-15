@@ -55,6 +55,16 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+  grafana: 
+    image: grafana/grafana:10.2.0
+    restart: always
+    networks:
+      - main
+    ports:
+      - '127.0.0.1:4000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
 
 networks:
   main:
