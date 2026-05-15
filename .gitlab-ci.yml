@@ -12,4 +12,4 @@ deploy:
   script:
     - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id.pem ubuntu@130.193.43.223 "cd backend-prod && docker compose up -d"
   only:
-    - main
+    - master
