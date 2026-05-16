@@ -25,7 +25,7 @@ export async function createE2eApp(): Promise<INestApplication> {
     );
 
     app.setGlobalPrefix('v1', {
-        exclude: ['health'],
+        exclude: ['health', '.well-known/assetlinks.json'],
     });
 
     await app.init();

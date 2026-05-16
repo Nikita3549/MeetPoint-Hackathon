@@ -17,7 +17,7 @@ async function bootstrap() {
     );
 
     app.setGlobalPrefix('v1', {
-        exclude: ['health'],
+        exclude: ['health', '.well-known/assetlinks.json'],
     });
 
     setupSwagger(app);
