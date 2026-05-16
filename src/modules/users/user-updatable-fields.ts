@@ -55,7 +55,9 @@ export function buildUserUpdateData(
 ): Prisma.UserUpdateInput {
     const data: Prisma.UserUpdateInput = {};
 
-    for (const key of Object.keys(USER_UPDATABLE_FIELDS) as UserUpdatableFieldKey[]) {
+    for (const key of Object.keys(
+        USER_UPDATABLE_FIELDS,
+    ) as UserUpdatableFieldKey[]) {
         if (!(key in body)) {
             continue;
         }
