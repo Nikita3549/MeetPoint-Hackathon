@@ -17,6 +17,8 @@ lint:
 test:
   stage: test
   image: node:22-alpine
+  variables:
+    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
   before_script:
     - apk add --no-cache openssl
     - npm ci --ignore-scripts
