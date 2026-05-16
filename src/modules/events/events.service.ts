@@ -173,6 +173,7 @@ export class EventsService {
                 title: dto.title,
                 date: new Date(dto.date),
                 description: dto.description,
+                isPrivate: dto.isPrivate ?? false,
                 organizerId: user.id,
                 tags: {
                     connect: tagIds.map((id) => ({ id })),

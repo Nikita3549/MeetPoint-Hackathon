@@ -1,9 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     ArrayMinSize,
     IsArray,
     IsBoolean,
     IsDateString,
+    IsOptional,
     IsString,
     MinLength,
 } from 'class-validator';
@@ -33,7 +34,8 @@ export class CreateEventDto {
     @MinLength(1, { each: true })
     tags: string[];
 
-    @ApiProperty({ type: Boolean, example: false })
+    @ApiPropertyOptional({ type: Boolean, example: false, default: false })
+    @IsOptional()
     @IsBoolean()
-    isPrivate: boolean;
+    isPrivate?: boolean;
 }

@@ -17,6 +17,7 @@ export type E2eFixture = {
             date?: string;
             description?: string;
             tags?: string[];
+            isPrivate?: boolean;
         },
     ) => Promise<{ id: string; slug: string }>;
     registerForEvent: (token: string, eventId: string) => Promise<void>;
@@ -47,6 +48,7 @@ export async function createE2eFixture(): Promise<E2eFixture> {
             date?: string;
             description?: string;
             tags?: string[];
+            isPrivate?: boolean;
         } = {},
     ) => {
         const response = await request(app.getHttpServer())
@@ -57,6 +59,7 @@ export async function createE2eFixture(): Promise<E2eFixture> {
                 date: data.date ?? '2026-06-15T10:00:00.000Z',
                 description: data.description ?? 'Networking for developers',
                 tags: data.tags ?? ['backend'],
+                isPrivate: data.isPrivate ?? false,
             })
             .expect(201);
 
