@@ -26,6 +26,8 @@ unit-tests:
   stage: test
   image: node:22-bookworm
   extends: .unit_coverage
+  variables:
+    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
   before_script:
     - npm ci --ignore-scripts
     - npx prisma generate --schema prisma/schema
