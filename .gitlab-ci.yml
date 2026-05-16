@@ -14,15 +14,23 @@ lint:
   only:
     - master
 
+.unit_coverage:
+  coverage: '/Statements\s*:\s*([\d.]+)%/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+
 unit-tests:
   stage: test
   image: node:22-bookworm
+  extends: .unit_coverage
   before_script:
     - npm ci --ignore-scripts
     - npx prisma generate --schema prisma/schema
   script:
     - npm run test:cov
-  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d.]+)/'
   artifacts:
     when: always
     paths:
@@ -37,6 +45,7 @@ unit-tests:
 e2e-tests:
   stage: test
   image: node:22-bookworm
+  extends: .unit_coverage
   services:
     - name: postgres:17-alpine
       alias: postgres
@@ -46,13 +55,16 @@ e2e-tests:
     POSTGRES_DB: ci
     DATABASE_URL: postgresql://ci:ci@postgres:5432/ci?schema=public
     JWT_SECRET: ci-jwt-secret
+    CLOUDINARY_NAME: e2e-cloud
+    CLOUDINARY_KEY: e2e-key
+    CLOUDINARY_SECRET: e2e-secret
+    DOTENV_CONFIG_QUIET: 'true'
   before_script:
     - npm ci --ignore-scripts
     - npx prisma generate --schema prisma/schema
     - npx prisma migrate deploy --schema prisma/schema
   script:
     - npm run test:e2e:cov
-  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d.]+)/'
   artifacts:
     when: always
     paths:

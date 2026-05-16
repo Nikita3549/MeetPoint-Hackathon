@@ -1,11 +1,16 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
+import { CLOUDINARY } from '../../src/modules/images/cloudinary.provider';
+import { createCloudinaryMock } from './mock-cloudinary';
 
 export async function createE2eApp(): Promise<INestApplication> {
     const moduleFixture: TestingModule = await Test.createTestingModule({
         imports: [AppModule],
-    }).compile();
+    })
+        .overrideProvider(CLOUDINARY)
+        .useValue(createCloudinaryMock())
+        .compile();
 
     const app = moduleFixture.createNestApplication();
 

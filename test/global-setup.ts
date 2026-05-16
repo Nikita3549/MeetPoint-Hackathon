@@ -10,6 +10,11 @@ export default function globalSetup(): void {
         );
     }
 
+    execSync('npx prisma generate --schema prisma/schema', {
+        stdio: 'inherit',
+        env: process.env,
+    });
+
     execSync('npx prisma migrate deploy --schema prisma/schema', {
         stdio: 'inherit',
         env: process.env,

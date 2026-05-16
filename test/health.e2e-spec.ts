@@ -1,19 +1,12 @@
-import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createE2eApp } from './helpers/create-e2e-app';
+import { getE2eFixture, registerE2eHooks } from './helpers/setup-e2e';
 
 describe('Health (e2e)', () => {
-    let app: INestApplication;
-
-    beforeAll(async () => {
-        app = await createE2eApp();
-    });
-
-    afterAll(async () => {
-        await app.close();
-    });
+    registerE2eHooks({ resetDatabase: false });
 
     it('GET /health returns ok', async () => {
+        const { app } = getE2eFixture();
+
         await request(app.getHttpServer())
             .get('/health')
             .expect(200)

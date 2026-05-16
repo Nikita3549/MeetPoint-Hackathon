@@ -1,30 +1,13 @@
-import { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { UserStatus } from '@prisma/client';
 import request from 'supertest';
-import { createE2eApp } from './helpers/create-e2e-app';
-import { truncateDatabase } from './helpers/database';
 import { createUser, DEFAULT_PASSWORD } from './helpers/factories';
+import { getE2eFixture, registerE2eHooks } from './helpers/setup-e2e';
 
 describe('Auth (e2e)', () => {
-    let app: INestApplication;
-    let prisma: PrismaClient;
-
-    beforeAll(async () => {
-        app = await createE2eApp();
-        prisma = new PrismaClient();
-        await prisma.$connect();
-    });
-
-    beforeEach(async () => {
-        await truncateDatabase(prisma);
-    });
-
-    afterAll(async () => {
-        await prisma.$disconnect();
-        await app.close();
-    });
+    registerE2eHooks();
 
     it('POST /v1/auth/login returns access token for valid credentials', async () => {
+        const { app, prisma } = getE2eFixture();
         await createUser(prisma, {
             email: 'user@example.com',
             fullName: 'Test User',
@@ -46,6 +29,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('POST /v1/auth/login returns 401 for invalid password', async () => {
+        const { app, prisma } = getE2eFixture();
         await createUser(prisma, {
             email: 'user@example.com',
             fullName: 'Test User',
@@ -60,27 +44,41 @@ describe('Auth (e2e)', () => {
             .expect(401);
     });
 
+    it('POST /v1/auth/login returns 401 for inactive user', async () => {
+        const { app, prisma } = getE2eFixture();
+        await createUser(prisma, {
+            email: 'inactive@example.com',
+            fullName: 'Inactive User',
+            status: UserStatus.INACTIVE,
+        });
+
+        await request(app.getHttpServer())
+            .post('/v1/auth/login')
+            .send({
+                email: 'inactive@example.com',
+                password: DEFAULT_PASSWORD,
+            })
+            .expect(401);
+    });
+
     it('GET /v1/users/me requires authentication', async () => {
+        const { app } = getE2eFixture();
+
         await request(app.getHttpServer()).get('/v1/users/me').expect(401);
     });
 
     it('GET /v1/users/me returns profile with valid token', async () => {
+        const { app, prisma, login } = getE2eFixture();
         await createUser(prisma, {
             email: 'user@example.com',
             fullName: 'Test User',
         });
 
-        const login = await request(app.getHttpServer())
-            .post('/v1/auth/login')
-            .send({
-                email: 'user@example.com',
-                password: DEFAULT_PASSWORD,
-            })
-            .expect(200);
+        const token = await login('user@example.com');
 
         const response = await request(app.getHttpServer())
             .get('/v1/users/me')
-            .set('Authorization', `Bearer ${login.body.accessToken}`)
+            .set('Authorization', `Bearer ${token}`)
             .expect(200);
 
         expect(response.body).toEqual(
