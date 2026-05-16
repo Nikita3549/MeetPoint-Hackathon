@@ -1,4 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactType, UserRole, UserStatus } from '@prisma/client';
 import { ImagesService } from '../images/images.service';
@@ -12,6 +16,7 @@ describe('UsersService', () => {
             findFirst: jest.fn(),
             findUnique: jest.fn(),
             update: jest.fn(),
+            updateMany: jest.fn(),
         },
         userContact: {
             findMany: jest.fn(),
@@ -96,6 +101,97 @@ describe('UsersService', () => {
             await expect(service.getMe('missing')).rejects.toThrow(
                 NotFoundException,
             );
+        });
+    });
+
+    describe('updateMe', () => {
+        const profile = {
+            id: 'user-1',
+            email: 'user@example.com',
+            fullName: 'User',
+            role: UserRole.PARTICIPANT,
+            status: UserStatus.ACTIVE,
+            emailVerified: true,
+            emailVerifiedAt: null,
+            createdAt: new Date('2025-01-01'),
+            updatedAt: new Date('2025-01-02'),
+            contacts: [],
+            avatarImage: null,
+        };
+
+        it('updates allowed fields and returns full profile', async () => {
+            prisma.user.findFirst.mockResolvedValue(profile);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+
+            await expect(
+                service.updateMe(authUser, { fullName: 'New Name' }),
+            ).resolves.toEqual({
+                ...profile,
+                contacts: [],
+            });
+
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: { id: 'user-1', deletedAt: null },
+                data: { fullName: 'New Name' },
+            });
+        });
+
+        it('ignores fields that have dedicated endpoints', async () => {
+            prisma.user.findFirst.mockResolvedValue(profile);
+
+            await expect(
+                service.updateMe(authUser, {
+                    fullName: 'Name',
+                    contacts: [{ type: ContactType.EMAIL, value: 'x@y.z' }],
+                    role: UserRole.ORGANIZER,
+                    tags: ['tag-1'],
+                }),
+            ).resolves.toEqual({
+                ...profile,
+                fullName: 'User',
+                contacts: [],
+            });
+
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: { id: 'user-1', deletedAt: null },
+                data: { fullName: 'Name' },
+            });
+        });
+
+        it('skips update when body has no allowed fields', async () => {
+            prisma.user.findFirst.mockResolvedValue(profile);
+
+            await expect(
+                service.updateMe(authUser, { role: UserRole.ORGANIZER }),
+            ).resolves.toEqual({
+                ...profile,
+                contacts: [],
+            });
+
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('throws when email is already taken', async () => {
+            prisma.user.findFirst.mockResolvedValue({ id: 'other-user' });
+
+            await expect(
+                service.updateMe(authUser, { email: 'taken@example.com' }),
+            ).rejects.toThrow(ConflictException);
+        });
+
+        it('throws when email is invalid', async () => {
+            await expect(
+                service.updateMe(authUser, { email: 'not-an-email' }),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('throws when user is not found on update', async () => {
+            prisma.user.findFirst.mockResolvedValue(null);
+            prisma.user.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(
+                service.updateMe(authUser, { fullName: 'Name' }),
+            ).rejects.toThrow(NotFoundException);
         });
     });
 

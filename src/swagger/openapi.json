@@ -156,6 +156,13 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateEventRequest"
+              },
+              "example": {
+                "title": "Tech Conference 2026",
+                "date": "2026-06-15T10:00:00.000Z",
+                "description": "Annual networking event for developers",
+                "tags": ["frontend", "backend", "AI"],
+                "isPrivate": false
               }
             }
           }
@@ -873,6 +880,46 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["users"],
+        "summary": "Update current user profile",
+        "operationId": "updateCurrentUser",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictEmailRegistered"
           }
         }
       }
@@ -1770,6 +1817,12 @@
               "minLength": 1
             },
             "example": ["frontend", "backend", "AI"]
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "default": false,
+            "example": false,
+            "description": "If true, the event is hidden from public listings"
           }
         }
       },
@@ -1841,6 +1894,15 @@
             "maxLength": 255,
             "example": "@username"
           }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Updatable profile fields (fullName, email, etc.). Unknown keys are ignored.",
+        "example": {
+          "fullName": "Jane Doe",
+          "email": "jane@example.com"
         }
       },
       "SetUserContactsRequest": {

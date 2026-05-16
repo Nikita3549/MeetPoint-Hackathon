@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { UserContact } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
@@ -8,6 +12,7 @@ import { UserAvatarResponseDto } from './dto/user-avatar-response.dto';
 import { UserContactItemDto } from './dto/user-contact-item.dto';
 import { UserContactResponseDto } from './dto/user-contact-response.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { buildUserUpdateData } from './user-updatable-fields';
 
 @Injectable()
 export class UsersService {
@@ -58,6 +63,43 @@ export class UsersService {
             updatedAt: user.updatedAt,
             avatarImage: user.avatarImage || null,
         };
+    }
+
+    async updateMe(
+        user: AuthenticatedUser,
+        body: Record<string, unknown>,
+    ): Promise<UserResponseDto> {
+        const data = buildUserUpdateData(body);
+
+        const email = data.email;
+
+        if (typeof email === 'string') {
+            const existing = await this.prisma.user.findFirst({
+                where: {
+                    email,
+                    id: { not: user.id },
+                    deletedAt: null,
+                },
+                select: { id: true },
+            });
+
+            if (existing) {
+                throw new ConflictException('Email already registered');
+            }
+        }
+
+        if (Object.keys(data).length > 0) {
+            const result = await this.prisma.user.updateMany({
+                where: { id: user.id, deletedAt: null },
+                data,
+            });
+
+            if (result.count === 0) {
+                throw new NotFoundException('User not found');
+            }
+        }
+
+        return this.getMe(user.id);
     }
 
     async getContacts(userId: string): Promise<UserContactResponseDto[]> {

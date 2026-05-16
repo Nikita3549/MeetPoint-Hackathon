@@ -8,6 +8,7 @@ describe('UsersController', () => {
     let controller: UsersController;
     const usersService = {
         getMe: jest.fn(),
+        updateMe: jest.fn(),
         getContacts: jest.fn(),
         setContacts: jest.fn(),
         uploadAvatar: jest.fn(),
@@ -40,6 +41,16 @@ describe('UsersController', () => {
 
         await expect(controller.getMe(user)).resolves.toEqual({ id: 'user-1' });
         expect(usersService.getMe).toHaveBeenCalledWith('user-1');
+    });
+
+    it('delegates updateMe', async () => {
+        const body = { fullName: 'Jane Doe' };
+        usersService.updateMe.mockResolvedValue({ id: 'user-1' });
+
+        await expect(controller.updateMe(user, body)).resolves.toEqual({
+            id: 'user-1',
+        });
+        expect(usersService.updateMe).toHaveBeenCalledWith(user, body);
     });
 
     it('delegates getEvents', async () => {

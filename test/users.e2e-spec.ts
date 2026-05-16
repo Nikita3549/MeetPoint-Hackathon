@@ -6,6 +6,35 @@ import { TEST_PNG_BUFFER } from './helpers/test-image';
 describe('Users (e2e)', () => {
     registerE2eHooks();
 
+    it('updates profile via PUT /users/me', async () => {
+        const { app, login, seedUsers } = getE2eFixture();
+        await seedUsers();
+
+        const token = await login('user-a@example.com');
+
+        await request(app.getHttpServer())
+            .put('/v1/users/me')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ fullName: 'Updated User A' })
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toEqual(
+                    expect.objectContaining({
+                        email: 'user-a@example.com',
+                        fullName: 'Updated User A',
+                    }),
+                );
+            });
+
+        await request(app.getHttpServer())
+            .get('/v1/users/me')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body.fullName).toBe('Updated User A');
+            });
+    });
+
     it('manages profile contacts', async () => {
         const { app, login, seedUsers } = getE2eFixture();
         await seedUsers();

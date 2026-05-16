@@ -6,12 +6,15 @@ import {
     Put,
     UploadedFile,
     UseInterceptors,
+    UsePipes,
+    ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
     ApiBearerAuth,
     ApiBadRequestResponse,
     ApiBody,
+    ApiConflictResponse,
     ApiConsumes,
     ApiOkResponse,
     ApiOperation,
@@ -44,6 +47,29 @@ export class UsersController {
     @ApiOkResponse({ type: UserResponseDto })
     getMe(@CurrentUser() user: AuthenticatedUser): Promise<UserResponseDto> {
         return this.usersService.getMe(user.id);
+    }
+
+    @Put('me')
+    @UsePipes(new ValidationPipe({ whitelist: false, transform: false }))
+    @ApiOperation({ summary: 'Update current user profile' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            additionalProperties: true,
+            example: {
+                fullName: 'Jane Doe',
+                email: 'jane@example.com',
+            },
+        },
+    })
+    @ApiOkResponse({ type: UserResponseDto })
+    @ApiBadRequestResponse({ description: 'Invalid profile fields' })
+    @ApiConflictResponse({ description: 'Email already registered' })
+    updateMe(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() body: Record<string, unknown>,
+    ): Promise<UserResponseDto> {
+        return this.usersService.updateMe(user, body);
     }
 
     @Get('me/events')
