@@ -29,8 +29,8 @@
       "description": "Users (JWT required)"
     },
     {
-      "name": "images",
-      "description": "Image uploads (avatar, event cover)"
+      "name": "match-requests",
+      "description": "Match requests (JWT required)"
     }
   ],
   "paths": {
@@ -392,10 +392,105 @@
         }
       }
     },
+    "/v1/events/{id}/participants": {
+      "get": {
+        "tags": ["events"],
+        "summary": "List event participants",
+        "operationId": "listEventParticipants",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated tag names. Participant must have all listed tags.",
+            "schema": {
+              "type": "string",
+              "example": "frontend,backend"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of participants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventParticipantResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/stats": {
+      "get": {
+        "tags": ["events"],
+        "summary": "Get event statistics for organizer",
+        "description": "Requires ORGANIZER role and event ownership",
+        "operationId": "getEventStats",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventStatsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenEventOwner"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          }
+        }
+      }
+    },
     "/v1/events/{id}/image": {
       "post": {
-        "tags": ["images", "events"],
+        "tags": ["events"],
         "summary": "Upload event cover image",
+        "description": "Requires ORGANIZER role and event ownership",
         "operationId": "uploadEventCoverImage",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -467,6 +562,410 @@
         }
       }
     },
+    "/v1/events/{id}/match-requests": {
+      "post": {
+        "tags": ["match-requests"],
+        "summary": "Send match request to another participant",
+        "operationId": "createMatchRequest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Match request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictMatch"
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/match-requests/incoming": {
+      "get": {
+        "tags": ["match-requests"],
+        "summary": "List incoming pending match requests",
+        "operationId": "listIncomingMatchRequests",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incoming match requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchRequestResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/match-requests/outgoing": {
+      "get": {
+        "tags": ["match-requests"],
+        "summary": "List outgoing pending match requests",
+        "operationId": "listOutgoingMatchRequests",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Outgoing match requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchRequestResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/match-requests/{requestId}/accept": {
+      "post": {
+        "tags": ["match-requests"],
+        "summary": "Accept incoming match request",
+        "operationId": "acceptMatchRequest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Match request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundMatchRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictMatchPending"
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/match-requests/{requestId}/reject": {
+      "post": {
+        "tags": ["match-requests"],
+        "summary": "Reject incoming match request",
+        "operationId": "rejectMatchRequest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Match request rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundMatchRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictMatchPending"
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/matches": {
+      "get": {
+        "tags": ["match-requests"],
+        "summary": "List matched participants with contacts",
+        "operationId": "listMatches",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matched participants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          }
+        }
+      }
+    },
+    "/v1/users/me": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Get current user profile",
+        "operationId": "getCurrentUser",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/users/me/events": {
+      "get": {
+        "tags": ["users"],
+        "summary": "List events current user participates in",
+        "operationId": "listCurrentUserEvents",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Participating events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserEventResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/users/me/tags": {
+      "get": {
+        "tags": ["users"],
+        "summary": "List current user tags",
+        "operationId": "getCurrentUserTags",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "User tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Tag"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": ["users"],
+        "summary": "Set current user tags",
+        "operationId": "setCurrentUserTags",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserTagsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tags updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Tag"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/v1/users/me/contacts": {
       "get": {
         "tags": ["users"],
@@ -532,7 +1031,7 @@
     },
     "/v1/users/me/avatar": {
       "post": {
-        "tags": ["images", "users"],
+        "tags": ["users"],
         "summary": "Upload current user avatar",
         "operationId": "uploadUserAvatar",
         "security": [{ "bearerAuth": [] }],
@@ -653,6 +1152,22 @@
           }
         }
       },
+      "ConflictMatch": {
+        "description": "409 — duplicate match or already matched",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/HttpError409Match" }
+          }
+        }
+      },
+      "ConflictMatchPending": {
+        "description": "409 — match request is no longer pending",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/HttpError409MatchPending" }
+          }
+        }
+      },
       "Forbidden": {
         "description": "403 — insufficient permissions",
         "content": {
@@ -698,6 +1213,14 @@
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/HttpError404Event" }
+          }
+        }
+      },
+      "NotFoundMatchRequest": {
+        "description": "404 — match request not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/HttpError404MatchRequest" }
           }
         }
       }
@@ -856,6 +1379,22 @@
           "error": "Conflict"
         }
       },
+      "HttpError409Match": {
+        "allOf": [{ "$ref": "#/components/schemas/ErrorResponse" }],
+        "example": {
+          "statusCode": 409,
+          "message": "Match request already sent",
+          "error": "Conflict"
+        }
+      },
+      "HttpError409MatchPending": {
+        "allOf": [{ "$ref": "#/components/schemas/ErrorResponse" }],
+        "example": {
+          "statusCode": 409,
+          "message": "Match request is no longer pending",
+          "error": "Conflict"
+        }
+      },
       "HttpError403": {
         "allOf": [{ "$ref": "#/components/schemas/ErrorResponse" }],
         "example": {
@@ -886,6 +1425,180 @@
           "statusCode": 404,
           "message": "Event not found",
           "error": "Not Found"
+        }
+      },
+      "HttpError404MatchRequest": {
+        "allOf": [{ "$ref": "#/components/schemas/ErrorResponse" }],
+        "example": {
+          "statusCode": 404,
+          "message": "Match request not found",
+          "error": "Not Found"
+        }
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": ["USER", "ORGANIZER", "PARTICIPANT"]
+      },
+      "UserStatus": {
+        "type": "string",
+        "enum": ["ACTIVE", "INACTIVE", "BANNED"]
+      },
+      "MatchRequestStatus": {
+        "type": "string",
+        "enum": ["PENDING", "ACCEPTED", "REJECTED"]
+      },
+      "UserResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "fullName",
+          "role",
+          "status",
+          "emailVerified",
+          "tags",
+          "contacts",
+          "createdAt",
+          "updatedAt",
+          "avatarImage"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email", "example": "user@example.com" },
+          "fullName": { "type": "string", "example": "Jane Doe" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "status": { "$ref": "#/components/schemas/UserStatus" },
+          "emailVerified": { "type": "boolean", "example": true },
+          "emailVerifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Tag" }
+          },
+          "contacts": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserContactResponse" }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "avatarImage": { "$ref": "#/components/schemas/AvatarImage" }
+        }
+      },
+      "UserEventResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EventResponse" },
+          {
+            "type": "object",
+            "required": ["registeredAt"],
+            "properties": {
+              "registeredAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-05-15T12:00:00.000Z"
+              }
+            }
+          }
+        ]
+      },
+      "SetUserTagsRequest": {
+        "type": "object",
+        "required": ["tags"],
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["frontend", "backend"]
+          }
+        }
+      },
+      "EventParticipantResponse": {
+        "type": "object",
+        "required": ["userId", "fullName", "tags", "registeredAt"],
+        "properties": {
+          "userId": { "type": "string", "format": "uuid" },
+          "fullName": { "type": "string", "example": "Alice Smith" },
+          "tags": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Tag" }
+          },
+          "registeredAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "EventStatsResponse": {
+        "type": "object",
+        "required": [
+          "eventId",
+          "participantsRegistered",
+          "matchRequestsSent",
+          "matchRequestsAccepted",
+          "acquaintancesMade"
+        ],
+        "properties": {
+          "eventId": { "type": "string", "format": "uuid" },
+          "participantsRegistered": { "type": "integer", "example": 42 },
+          "matchRequestsSent": { "type": "integer", "example": 18 },
+          "matchRequestsAccepted": { "type": "integer", "example": 7 },
+          "acquaintancesMade": { "type": "integer", "example": 7 }
+        }
+      },
+      "CreateMatchRequest": {
+        "type": "object",
+        "required": ["toUserId"],
+        "properties": {
+          "toUserId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        }
+      },
+      "MatchRequestUser": {
+        "type": "object",
+        "required": ["id", "fullName"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "fullName": { "type": "string", "example": "Alice Smith" }
+        }
+      },
+      "MatchRequestResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "eventId",
+          "status",
+          "fromUser",
+          "toUser",
+          "createdAt",
+          "respondedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "eventId": { "type": "string", "format": "uuid" },
+          "status": { "$ref": "#/components/schemas/MatchRequestStatus" },
+          "fromUser": { "$ref": "#/components/schemas/MatchRequestUser" },
+          "toUser": { "$ref": "#/components/schemas/MatchRequestUser" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "respondedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "MatchResponse": {
+        "type": "object",
+        "required": ["matchRequestId", "user", "contacts", "matchedAt"],
+        "properties": {
+          "matchRequestId": { "type": "string", "format": "uuid" },
+          "user": { "$ref": "#/components/schemas/MatchRequestUser" },
+          "contacts": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserContactResponse" }
+          },
+          "matchedAt": { "type": "string", "format": "date-time" }
         }
       },
       "ImageUploadRequest": {

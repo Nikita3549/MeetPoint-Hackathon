@@ -5,6 +5,37 @@ import { TEST_PNG_BUFFER } from './helpers/test-image';
 describe('Images (e2e)', () => {
     registerE2eHooks();
 
+    it('uploads user avatar', async () => {
+        const { app, login, seedUsers } = getE2eFixture();
+        await seedUsers();
+
+        const token = await login('user-a@example.com');
+
+        await request(app.getHttpServer())
+            .post('/v1/users/me/avatar')
+            .set('Authorization', `Bearer ${token}`)
+            .attach('file', TEST_PNG_BUFFER, {
+                filename: 'avatar.png',
+                contentType: 'image/png',
+            })
+            .expect(201)
+            .expect((response) => {
+                expect(response.body.avatarUrl).toMatch(/^https:\/\//);
+            });
+    });
+
+    it('returns 400 when avatar file is missing', async () => {
+        const { app, login, seedUsers } = getE2eFixture();
+        await seedUsers();
+
+        const token = await login('user-a@example.com');
+
+        await request(app.getHttpServer())
+            .post('/v1/users/me/avatar')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(400);
+    });
+
     it('uploads event cover image', async () => {
         const { app, login, seedUsers, createEvent } = getE2eFixture();
         await seedUsers();

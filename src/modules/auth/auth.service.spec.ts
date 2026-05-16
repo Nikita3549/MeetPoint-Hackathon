@@ -171,4 +171,51 @@ describe('AuthService', () => {
             }),
         ).rejects.toThrow(ConflictException);
     });
+
+    it('uses fallback name when email local part is empty', async () => {
+        prisma.user.findUnique.mockResolvedValue(null);
+        (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+        prisma.user.create.mockResolvedValue({
+            ...activeUser,
+            email: '@company.com',
+            fullName: 'User',
+        });
+        jwtService.signAsync.mockResolvedValue('token');
+
+        await service.register({
+            email: '@company.com',
+            password: 'secret',
+        });
+
+        expect(prisma.user.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    fullName: 'User',
+                }),
+            }),
+        );
+    });
+
+    it('returns empty contacts and tags for newly registered user', async () => {
+        prisma.user.findUnique.mockResolvedValue(null);
+        (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+        prisma.user.create.mockResolvedValue({
+            ...activeUser,
+            tags: [],
+            contacts: [],
+        });
+        jwtService.signAsync.mockResolvedValue('token');
+
+        await expect(
+            service.register({
+                email: 'new@example.com',
+                password: 'secret',
+            }),
+        ).resolves.toEqual({
+            accessToken: 'token',
+            name: 'Jane Doe',
+            tags: [],
+            contacts: [],
+        });
+    });
 });

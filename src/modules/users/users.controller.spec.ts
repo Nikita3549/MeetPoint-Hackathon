@@ -12,6 +12,7 @@ describe('UsersController', () => {
         setTags: jest.fn(),
         getContacts: jest.fn(),
         setContacts: jest.fn(),
+        uploadAvatar: jest.fn(),
     };
     const eventsService = {
         findParticipatingEvents: jest.fn(),
@@ -66,5 +67,31 @@ describe('UsersController', () => {
 
         await expect(controller.setContacts(user, dto)).resolves.toEqual([]);
         expect(usersService.setContacts).toHaveBeenCalledWith(user, dto);
+    });
+
+    it('delegates getTags', async () => {
+        usersService.getTags.mockResolvedValue([]);
+
+        await expect(controller.getTags(user)).resolves.toEqual([]);
+        expect(usersService.getTags).toHaveBeenCalledWith('user-1');
+    });
+
+    it('delegates getContacts', async () => {
+        usersService.getContacts.mockResolvedValue([]);
+
+        await expect(controller.getContacts(user)).resolves.toEqual([]);
+        expect(usersService.getContacts).toHaveBeenCalledWith('user-1');
+    });
+
+    it('delegates uploadAvatar', async () => {
+        const file = { originalname: 'avatar.jpg' } as Express.Multer.File;
+        usersService.uploadAvatar.mockResolvedValue({
+            avatarUrl: 'https://cdn.example/avatar.jpg',
+        });
+
+        await expect(controller.uploadAvatar(user, file)).resolves.toEqual({
+            avatarUrl: 'https://cdn.example/avatar.jpg',
+        });
+        expect(usersService.uploadAvatar).toHaveBeenCalledWith(user, file);
     });
 });

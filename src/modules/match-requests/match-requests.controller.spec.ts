@@ -64,4 +64,41 @@ describe('MatchRequestsController', () => {
             [],
         );
     });
+
+    it('delegates findIncoming', async () => {
+        matchRequestsService.findIncoming.mockResolvedValue([]);
+
+        await expect(controller.findIncoming(user, 'event-1')).resolves.toEqual(
+            [],
+        );
+        expect(matchRequestsService.findIncoming).toHaveBeenCalledWith(
+            user,
+            'event-1',
+        );
+    });
+
+    it('delegates findOutgoing', async () => {
+        matchRequestsService.findOutgoing.mockResolvedValue([]);
+
+        await expect(controller.findOutgoing(user, 'event-1')).resolves.toEqual(
+            [],
+        );
+        expect(matchRequestsService.findOutgoing).toHaveBeenCalledWith(
+            user,
+            'event-1',
+        );
+    });
+
+    it('delegates reject', async () => {
+        matchRequestsService.reject.mockResolvedValue({ id: 'req-1' });
+
+        await expect(
+            controller.reject(user, 'event-1', 'req-1'),
+        ).resolves.toEqual({ id: 'req-1' });
+        expect(matchRequestsService.reject).toHaveBeenCalledWith(
+            user,
+            'event-1',
+            'req-1',
+        );
+    });
 });

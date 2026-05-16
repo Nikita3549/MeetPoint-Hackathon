@@ -243,4 +243,54 @@ describe('UsersService', () => {
             expect(tx.userContact.createMany).not.toHaveBeenCalled();
         });
     });
+
+    describe('uploadAvatar', () => {
+        const file = {
+            originalname: 'avatar.jpg',
+            mimetype: 'image/jpeg',
+            size: 512,
+        } as Express.Multer.File;
+
+        it('uploads avatar and links image to user', async () => {
+            prisma.user.findUnique.mockResolvedValue({ avatarImageId: null });
+            imagesService.uploadImage.mockResolvedValue({
+                id: 'img-1',
+                url: 'https://cdn.example/avatar.jpg',
+            });
+
+            await expect(service.uploadAvatar(authUser, file)).resolves.toEqual(
+                {
+                    avatarUrl: 'https://cdn.example/avatar.jpg',
+                },
+            );
+
+            expect(imagesService.uploadImage).toHaveBeenCalledWith(
+                'user-1',
+                file,
+            );
+            expect(prisma.user.update).toHaveBeenCalledWith({
+                where: { id: 'user-1' },
+                data: { avatarImageId: 'img-1' },
+            });
+            expect(imagesService.deleteImage).not.toHaveBeenCalled();
+        });
+
+        it('deletes previous avatar when replacing', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                avatarImageId: 'old-img',
+            });
+            imagesService.uploadImage.mockResolvedValue({
+                id: 'img-2',
+                url: 'https://cdn.example/new-avatar.jpg',
+            });
+
+            await expect(service.uploadAvatar(authUser, file)).resolves.toEqual(
+                {
+                    avatarUrl: 'https://cdn.example/new-avatar.jpg',
+                },
+            );
+
+            expect(imagesService.deleteImage).toHaveBeenCalledWith('old-img');
+        });
+    });
 });

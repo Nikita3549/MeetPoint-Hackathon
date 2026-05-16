@@ -123,6 +123,14 @@ describe('EventsService', () => {
                 joinUrl: '/e/abc-defg-hij',
             });
         });
+
+        it('throws when event is not found', async () => {
+            prisma.event.findUnique.mockResolvedValue(null);
+
+            await expect(service.findBySlug('missing-slug')).rejects.toThrow(
+                NotFoundException,
+            );
+        });
     });
 
     describe('findParticipatingEvents', () => {
@@ -198,6 +206,14 @@ describe('EventsService', () => {
                 registeredAt,
             });
         });
+
+        it('throws when slug does not exist', async () => {
+            prisma.event.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.registerBySlug(participant, 'missing-slug'),
+            ).rejects.toThrow(NotFoundException);
+        });
     });
 
     describe('create', () => {
@@ -249,6 +265,14 @@ describe('EventsService', () => {
             await expect(
                 service.update(organizer, 'event-1', { title: 'Updated' }),
             ).rejects.toThrow(ForbiddenException);
+        });
+
+        it('throws when event does not exist', async () => {
+            prisma.event.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.update(organizer, 'missing', { title: 'Updated' }),
+            ).rejects.toThrow(NotFoundException);
         });
     });
 
@@ -327,6 +351,85 @@ describe('EventsService', () => {
 
             await expect(
                 service.getStats(organizer, 'event-1'),
+            ).rejects.toThrow(ForbiddenException);
+        });
+    });
+
+    describe('uploadCoverImage', () => {
+        const file = {
+            originalname: 'cover.jpg',
+            mimetype: 'image/jpeg',
+            size: 2048,
+        } as Express.Multer.File;
+
+        const updatedEvent = {
+            ...eventRecord,
+            coverImage: {
+                url: 'https://cdn.example/cover.jpg',
+            },
+        };
+
+        it('uploads cover and updates event', async () => {
+            prisma.event.findUnique.mockResolvedValue({
+                organizerId: 'org-1',
+                coverImageId: null,
+            });
+            imagesService.uploadImage.mockResolvedValue({
+                id: 'img-1',
+                url: 'https://cdn.example/cover.jpg',
+            });
+            prisma.event.update.mockResolvedValue(updatedEvent);
+
+            await expect(
+                service.uploadCoverImage(organizer, 'event-1', file),
+            ).resolves.toEqual({
+                ...eventRecord,
+                imageUrl: 'https://cdn.example/cover.jpg',
+                joinUrl: '/e/abc-defg-hij',
+            });
+
+            expect(imagesService.uploadImage).toHaveBeenCalledWith(
+                'org-1',
+                file,
+            );
+            expect(imagesService.deleteImage).not.toHaveBeenCalled();
+        });
+
+        it('deletes previous cover when replacing', async () => {
+            prisma.event.findUnique.mockResolvedValue({
+                organizerId: 'org-1',
+                coverImageId: 'old-cover',
+            });
+            imagesService.uploadImage.mockResolvedValue({
+                id: 'img-2',
+                url: 'https://cdn.example/new-cover.jpg',
+            });
+            prisma.event.update.mockResolvedValue({
+                ...eventRecord,
+                coverImage: { url: 'https://cdn.example/new-cover.jpg' },
+            });
+
+            await service.uploadCoverImage(organizer, 'event-1', file);
+
+            expect(imagesService.deleteImage).toHaveBeenCalledWith('old-cover');
+        });
+
+        it('throws when event is not found', async () => {
+            prisma.event.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.uploadCoverImage(organizer, 'missing', file),
+            ).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws when user is not event owner', async () => {
+            prisma.event.findUnique.mockResolvedValue({
+                organizerId: 'other-org',
+                coverImageId: null,
+            });
+
+            await expect(
+                service.uploadCoverImage(organizer, 'event-1', file),
             ).rejects.toThrow(ForbiddenException);
         });
     });

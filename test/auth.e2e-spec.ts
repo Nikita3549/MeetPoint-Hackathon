@@ -67,6 +67,43 @@ describe('Auth (e2e)', () => {
         await request(app.getHttpServer()).get('/v1/users/me').expect(401);
     });
 
+    it('POST /v1/auth/register creates user and returns access token', async () => {
+        const { app } = getE2eFixture();
+
+        const response = await request(app.getHttpServer())
+            .post('/v1/auth/register')
+            .send({
+                email: 'new-user@example.com',
+                password: DEFAULT_PASSWORD,
+            })
+            .expect(200);
+
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                accessToken: expect.any(String),
+                name: 'new-user',
+                contacts: [],
+                tags: [],
+            }),
+        );
+    });
+
+    it('POST /v1/auth/register returns 409 for duplicate email', async () => {
+        const { app, prisma } = getE2eFixture();
+        await createUser(prisma, {
+            email: 'user@example.com',
+            fullName: 'Existing User',
+        });
+
+        await request(app.getHttpServer())
+            .post('/v1/auth/register')
+            .send({
+                email: 'user@example.com',
+                password: DEFAULT_PASSWORD,
+            })
+            .expect(409);
+    });
+
     it('GET /v1/users/me returns profile with valid token', async () => {
         const { app, prisma, login } = getE2eFixture();
         await createUser(prisma, {

@@ -15,6 +15,7 @@ describe('EventsController', () => {
         findParticipants: jest.fn(),
         getStats: jest.fn(),
         update: jest.fn(),
+        uploadCoverImage: jest.fn(),
     };
 
     const user = {
@@ -73,6 +74,20 @@ describe('EventsController', () => {
             user,
             'event-1',
             'Go',
+        );
+    });
+
+    it('delegates uploadCoverImage', async () => {
+        const file = { originalname: 'cover.jpg' } as Express.Multer.File;
+        eventsService.uploadCoverImage.mockResolvedValue({ id: 'event-1' });
+
+        await expect(
+            controller.uploadCoverImage(user, 'event-1', file),
+        ).resolves.toEqual({ id: 'event-1' });
+        expect(eventsService.uploadCoverImage).toHaveBeenCalledWith(
+            user,
+            'event-1',
+            file,
         );
     });
 });
