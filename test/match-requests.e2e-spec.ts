@@ -31,6 +31,12 @@ describe('Match requests (e2e)', () => {
             })
             .expect(200);
 
+        await request(app.getHttpServer())
+            .put(`/v1/events/${event.id}/participants/me/tags`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({ tags: ['backend'] })
+            .expect(200);
+
         const createResponse = await request(app.getHttpServer())
             .post(`/v1/events/${event.id}/match-requests`)
             .set('Authorization', `Bearer ${tokenB}`)
@@ -46,6 +52,11 @@ describe('Match requests (e2e)', () => {
             .expect((response) => {
                 expect(response.body).toHaveLength(1);
                 expect(response.body[0].id).toBe(requestId);
+                expect(response.body[0].toUser.tags).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({ name: 'backend' }),
+                    ]),
+                );
             });
 
         await request(app.getHttpServer())
@@ -71,6 +82,11 @@ describe('Match requests (e2e)', () => {
             .expect((response) => {
                 expect(response.body).toHaveLength(1);
                 expect(response.body[0].user.id).toBe(userA.id);
+                expect(response.body[0].user.tags).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({ name: 'backend' }),
+                    ]),
+                );
                 expect(response.body[0].contacts).toEqual(
                     expect.arrayContaining([
                         expect.objectContaining({

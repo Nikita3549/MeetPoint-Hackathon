@@ -6,6 +6,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { MatchRequest, MatchRequestStatus, Prisma } from '@prisma/client';
+import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { UserContactResponseDto } from '../users/dto/user-contact-response.dto';
@@ -14,24 +15,29 @@ import { MatchRequestResponseDto } from './dto/match-request-response.dto';
 import { MatchRequestUserDto } from './dto/match-request-user.dto';
 import { MatchResponseDto } from './dto/match-response.dto';
 
-const matchRequestInclude = {
-    fromUser: {
-        select: {
-            id: true,
-            fullName: true,
-        },
-    },
-    toUser: {
-        select: {
-            id: true,
-            fullName: true,
-        },
-    },
-} satisfies Prisma.MatchRequestInclude;
+type MatchRequestWithUsers = {
+    id: string;
+    eventId: string;
+    fromUserId: string;
+    toUserId: string;
+    status: MatchRequestStatus;
+    createdAt: Date;
+    updatedAt: Date;
+    respondedAt: Date | null;
+    fromUser: MatchRequestUserWithEventTags;
+    toUser: MatchRequestUserWithEventTags;
+};
 
-type MatchRequestWithUsers = Prisma.MatchRequestGetPayload<{
-    include: typeof matchRequestInclude;
-}>;
+type MatchRequestUserWithEventTags = {
+    id: string;
+    fullName: string;
+    eventParticipations: { tags: TagResponseDto[] }[];
+    contacts?: {
+        id: string;
+        type: UserContactResponseDto['type'];
+        value: string;
+    }[];
+};
 
 @Injectable()
 export class MatchRequestsService {
@@ -87,7 +93,7 @@ export class MatchRequestsService {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt: new Date(),
                 },
-                include: matchRequestInclude,
+                include: this.buildMatchRequestInclude(eventId),
             });
 
             return this.toResponse(accepted);
@@ -99,7 +105,7 @@ export class MatchRequestsService {
                 fromUserId: user.id,
                 toUserId: dto.toUserId,
             },
-            include: matchRequestInclude,
+            include: this.buildMatchRequestInclude(eventId),
         });
 
         return this.toResponse(created);
@@ -118,7 +124,7 @@ export class MatchRequestsService {
                 toUserId: user.id,
                 status: MatchRequestStatus.PENDING,
             },
-            include: matchRequestInclude,
+            include: this.buildMatchRequestInclude(eventId),
             orderBy: { createdAt: 'desc' },
         });
 
@@ -138,7 +144,7 @@ export class MatchRequestsService {
                 fromUserId: user.id,
                 status: MatchRequestStatus.PENDING,
             },
-            include: matchRequestInclude,
+            include: this.buildMatchRequestInclude(eventId),
             orderBy: { createdAt: 'desc' },
         });
 
@@ -166,7 +172,7 @@ export class MatchRequestsService {
                 status: MatchRequestStatus.ACCEPTED,
                 respondedAt: new Date(),
             },
-            include: matchRequestInclude,
+            include: this.buildMatchRequestInclude(eventId),
         });
 
         return this.toResponse(updated);
@@ -193,7 +199,7 @@ export class MatchRequestsService {
                 status: MatchRequestStatus.REJECTED,
                 respondedAt: new Date(),
             },
-            include: matchRequestInclude,
+            include: this.buildMatchRequestInclude(eventId),
         });
 
         return this.toResponse(updated);
@@ -212,27 +218,9 @@ export class MatchRequestsService {
                 status: MatchRequestStatus.ACCEPTED,
                 OR: [{ fromUserId: user.id }, { toUserId: user.id }],
             },
-            include: {
-                ...matchRequestInclude,
-                fromUser: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        contacts: {
-                            orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
-                        },
-                    },
-                },
-                toUser: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        contacts: {
-                            orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
-                        },
-                    },
-                },
-            },
+            include: this.buildMatchRequestInclude(eventId, {
+                withContacts: true,
+            }),
             orderBy: { respondedAt: 'desc' },
         });
 
@@ -311,22 +299,7 @@ export class MatchRequestsService {
     }
 
     private toMatchResponse(
-        request: MatchRequestWithUsers & {
-            fromUser: MatchRequestWithUsers['fromUser'] & {
-                contacts: {
-                    id: string;
-                    type: UserContactResponseDto['type'];
-                    value: string;
-                }[];
-            };
-            toUser: MatchRequestWithUsers['toUser'] & {
-                contacts: {
-                    id: string;
-                    type: UserContactResponseDto['type'];
-                    value: string;
-                }[];
-            };
-        },
+        request: MatchRequestWithUsers,
         currentUserId: string,
     ): MatchResponseDto {
         const matchedUser =
@@ -337,7 +310,7 @@ export class MatchRequestsService {
         return {
             matchRequestId: request.id,
             user: this.toUserDto(matchedUser),
-            contacts: matchedUser.contacts.map((contact) => ({
+            contacts: (matchedUser.contacts ?? []).map((contact) => ({
                 id: contact.id,
                 type: contact.type,
                 value: contact.value,
@@ -346,13 +319,45 @@ export class MatchRequestsService {
         };
     }
 
-    private toUserDto(user: {
-        id: string;
-        fullName: string;
-    }): MatchRequestUserDto {
+    private buildMatchRequestInclude(
+        eventId: string,
+        options?: { withContacts?: boolean },
+    ): Prisma.MatchRequestInclude {
+        const userSelect: Prisma.UserSelect = {
+            id: true,
+            fullName: true,
+            eventParticipations: {
+                where: { eventId },
+                select: {
+                    tags: {
+                        select: { id: true, name: true },
+                        orderBy: { name: 'asc' },
+                    },
+                },
+            },
+            ...(options?.withContacts
+                ? {
+                      contacts: {
+                          orderBy: [
+                              { type: 'asc' },
+                              { createdAt: 'asc' },
+                          ],
+                      },
+                  }
+                : {}),
+        };
+
+        return {
+            fromUser: { select: userSelect },
+            toUser: { select: userSelect },
+        };
+    }
+
+    private toUserDto(user: MatchRequestUserWithEventTags): MatchRequestUserDto {
         return {
             id: user.id,
             fullName: user.fullName,
+            tags: user.eventParticipations[0]?.tags ?? [],
         };
     }
 }

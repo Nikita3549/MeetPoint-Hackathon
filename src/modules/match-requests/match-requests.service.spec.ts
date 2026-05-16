@@ -39,6 +39,16 @@ describe('MatchRequestsService', () => {
         role: UserRole.PARTICIPANT,
     };
 
+    const userWithTags = (
+        id: string,
+        fullName: string,
+        tags: { id: string; name: string }[] = [],
+    ) => ({
+        id,
+        fullName,
+        eventParticipations: [{ tags }],
+    });
+
     const matchRequestRecord = {
         id: 'req-1',
         eventId: 'event-1',
@@ -48,8 +58,10 @@ describe('MatchRequestsService', () => {
         createdAt: new Date('2025-01-01'),
         updatedAt: new Date('2025-01-01'),
         respondedAt: null,
-        fromUser: { id: 'user-a', fullName: 'User A' },
-        toUser: { id: 'user-b', fullName: 'User B' },
+        fromUser: userWithTags('user-a', 'User A', [
+            { id: 'tag-1', name: 'backend' },
+        ]),
+        toUser: userWithTags('user-b', 'User B'),
     };
 
     beforeEach(async () => {
@@ -124,15 +136,19 @@ describe('MatchRequestsService', () => {
                 ...matchRequestRecord,
                 fromUserId: 'user-b',
                 toUserId: 'user-a',
-                fromUser: { id: 'user-b', fullName: 'User B' },
-                toUser: { id: 'user-a', fullName: 'User A' },
+                fromUser: userWithTags('user-b', 'User B'),
+                toUser: userWithTags('user-a', 'User A', [
+                    { id: 'tag-1', name: 'backend' },
+                ]),
             };
             const accepted = {
                 ...reverseRequest,
                 status: MatchRequestStatus.ACCEPTED,
                 respondedAt: new Date('2025-01-02'),
-                fromUser: { id: 'user-b', fullName: 'User B' },
-                toUser: { id: 'user-a', fullName: 'User A' },
+                fromUser: userWithTags('user-b', 'User B'),
+                toUser: userWithTags('user-a', 'User A', [
+                    { id: 'tag-1', name: 'backend' },
+                ]),
             };
             prisma.matchRequest.findUnique.mockImplementation(async (args) => {
                 if ('eventId_fromUserId_toUserId' in args.where) {
@@ -154,8 +170,12 @@ describe('MatchRequestsService', () => {
                 id: 'req-1',
                 eventId: 'event-1',
                 status: MatchRequestStatus.ACCEPTED,
-                fromUser: { id: 'user-b', fullName: 'User B' },
-                toUser: { id: 'user-a', fullName: 'User A' },
+                fromUser: { id: 'user-b', fullName: 'User B', tags: [] },
+                toUser: {
+                    id: 'user-a',
+                    fullName: 'User A',
+                    tags: [{ id: 'tag-1', name: 'backend' }],
+                },
                 createdAt: reverseRequest.createdAt,
                 respondedAt: accepted.respondedAt,
             });
@@ -170,8 +190,12 @@ describe('MatchRequestsService', () => {
                 id: 'req-1',
                 eventId: 'event-1',
                 status: MatchRequestStatus.PENDING,
-                fromUser: { id: 'user-a', fullName: 'User A' },
-                toUser: { id: 'user-b', fullName: 'User B' },
+                fromUser: {
+                    id: 'user-a',
+                    fullName: 'User A',
+                    tags: [{ id: 'tag-1', name: 'backend' }],
+                },
+                toUser: { id: 'user-b', fullName: 'User B', tags: [] },
                 createdAt: matchRequestRecord.createdAt,
                 respondedAt: null,
             });
@@ -199,8 +223,12 @@ describe('MatchRequestsService', () => {
                     id: 'req-1',
                     eventId: 'event-1',
                     status: MatchRequestStatus.PENDING,
-                    fromUser: { id: 'user-a', fullName: 'User A' },
-                    toUser: { id: 'user-b', fullName: 'User B' },
+                    fromUser: {
+                        id: 'user-a',
+                        fullName: 'User A',
+                        tags: [{ id: 'tag-1', name: 'backend' }],
+                    },
+                    toUser: { id: 'user-b', fullName: 'User B', tags: [] },
                     createdAt: matchRequestRecord.createdAt,
                     respondedAt: null,
                 },
@@ -224,8 +252,12 @@ describe('MatchRequestsService', () => {
                 id: 'req-1',
                 eventId: 'event-1',
                 status: MatchRequestStatus.ACCEPTED,
-                fromUser: { id: 'user-a', fullName: 'User A' },
-                toUser: { id: 'user-b', fullName: 'User B' },
+                fromUser: {
+                    id: 'user-a',
+                    fullName: 'User A',
+                    tags: [{ id: 'tag-1', name: 'backend' }],
+                },
+                toUser: { id: 'user-b', fullName: 'User B', tags: [] },
                 createdAt: matchRequestRecord.createdAt,
                 respondedAt: accepted.respondedAt,
             });
@@ -267,8 +299,12 @@ describe('MatchRequestsService', () => {
                 id: 'req-1',
                 eventId: 'event-1',
                 status: MatchRequestStatus.REJECTED,
-                fromUser: { id: 'user-a', fullName: 'User A' },
-                toUser: { id: 'user-b', fullName: 'User B' },
+                fromUser: {
+                    id: 'user-a',
+                    fullName: 'User A',
+                    tags: [{ id: 'tag-1', name: 'backend' }],
+                },
+                toUser: { id: 'user-b', fullName: 'User B', tags: [] },
                 createdAt: matchRequestRecord.createdAt,
                 respondedAt: rejected.respondedAt,
             });
@@ -296,13 +332,13 @@ describe('MatchRequestsService', () => {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt,
                     fromUser: {
-                        id: 'user-a',
-                        fullName: 'User A',
+                        ...userWithTags('user-a', 'User A'),
                         contacts: [],
                     },
                     toUser: {
-                        id: 'user-b',
-                        fullName: 'User B',
+                        ...userWithTags('user-b', 'User B', [
+                            { id: 'tag-2', name: 'ai' },
+                        ]),
                         contacts: [contact],
                     },
                 },
@@ -313,7 +349,11 @@ describe('MatchRequestsService', () => {
             ).resolves.toEqual([
                 {
                     matchRequestId: 'req-1',
-                    user: { id: 'user-b', fullName: 'User B' },
+                    user: {
+                        id: 'user-b',
+                        fullName: 'User B',
+                        tags: [{ id: 'tag-2', name: 'ai' }],
+                    },
                     contacts: [contactResponse],
                     matchedAt: respondedAt,
                 },
