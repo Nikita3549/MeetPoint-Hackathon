@@ -17,7 +17,7 @@
     "lint:fix": "eslint \"{src,prisma,tests}/**/*.ts\" --fix",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "test:cov": "jest --runInBand --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:seed": "prisma db seed"
@@ -87,9 +87,35 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!**/*.module.ts",
+      "!**/main.ts",
+      "!**/dto/**",
+      "!**/test/**",
+      "!**/swagger/**",
+      "!**/decorators/**",
+      "!**/interfaces/**"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "lcov",
+      "cobertura",
+      "html"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 80,
+        "lines": 85,
+        "statements": 85
+      }
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/jest.setup.ts"
+    ],
     "testEnvironment": "node"
   }
 }
