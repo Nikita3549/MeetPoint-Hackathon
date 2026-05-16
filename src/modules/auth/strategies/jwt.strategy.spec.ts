@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JwtStrategy } from './jwt.strategy';
 

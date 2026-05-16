@@ -39,9 +39,9 @@ describe('MatchRequestsController', () => {
         const dto = { toUserId: 'user-2' };
         matchRequestsService.create.mockResolvedValue({ id: 'req-1' });
 
-        await expect(
-            controller.create(user, 'event-1', dto),
-        ).resolves.toEqual({ id: 'req-1' });
+        await expect(controller.create(user, 'event-1', dto)).resolves.toEqual({
+            id: 'req-1',
+        });
         expect(matchRequestsService.create).toHaveBeenCalledWith(
             user,
             'event-1',

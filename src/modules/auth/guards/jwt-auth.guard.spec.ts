@@ -10,10 +10,7 @@ describe('JwtAuthGuard', () => {
             handlerMetadata: new Map([[IS_PUBLIC_KEY, true]]),
         });
         const activateSpy = jest
-            .spyOn(
-                Object.getPrototypeOf(JwtAuthGuard.prototype),
-                'canActivate',
-            )
+            .spyOn(Object.getPrototypeOf(JwtAuthGuard.prototype), 'canActivate')
             .mockReturnValue(false);
 
         expect(guard.canActivate(context)).toBe(true);
@@ -25,10 +22,7 @@ describe('JwtAuthGuard', () => {
     it('delegates to passport for protected routes', () => {
         const context = createMockExecutionContext({});
         const activateSpy = jest
-            .spyOn(
-                Object.getPrototypeOf(JwtAuthGuard.prototype),
-                'canActivate',
-            )
+            .spyOn(Object.getPrototypeOf(JwtAuthGuard.prototype), 'canActivate')
             .mockReturnValue(true);
 
         expect(guard.canActivate(context)).toBe(true);

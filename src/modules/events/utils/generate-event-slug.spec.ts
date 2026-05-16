@@ -1,7 +1,4 @@
-import {
-    EVENT_SLUG_PATTERN,
-    generateEventSlug,
-} from './generate-event-slug';
+import { EVENT_SLUG_PATTERN, generateEventSlug } from './generate-event-slug';
 
 describe('generateEventSlug', () => {
     it('returns slug matching pattern', () => {

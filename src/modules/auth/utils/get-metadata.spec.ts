@@ -10,9 +10,9 @@ describe('getMetadataAllAndOverride', () => {
             classMetadata: new Map([[METADATA_KEY, 'class']]),
         });
 
-        expect(
-            getMetadataAllAndOverride<string>(METADATA_KEY, context),
-        ).toBe('handler');
+        expect(getMetadataAllAndOverride<string>(METADATA_KEY, context)).toBe(
+            'handler',
+        );
     });
 
     it('falls back to class metadata', () => {
@@ -20,9 +20,9 @@ describe('getMetadataAllAndOverride', () => {
             classMetadata: new Map([[METADATA_KEY, 'class']]),
         });
 
-        expect(
-            getMetadataAllAndOverride<string>(METADATA_KEY, context),
-        ).toBe('class');
+        expect(getMetadataAllAndOverride<string>(METADATA_KEY, context)).toBe(
+            'class',
+        );
     });
 
     it('returns undefined when metadata is missing', () => {
