@@ -20,7 +20,7 @@ describe('Match requests (e2e)', () => {
     }
 
     it('accepts match request and returns matched contacts', async () => {
-        const { app, event, userA, userB, tokenA, tokenB } =
+        const { app, event, userA, tokenA, tokenB } =
             await setupEventWithParticipants();
 
         await request(app.getHttpServer())
@@ -57,9 +57,7 @@ describe('Match requests (e2e)', () => {
             });
 
         await request(app.getHttpServer())
-            .post(
-                `/v1/events/${event.id}/match-requests/${requestId}/accept`,
-            )
+            .post(`/v1/events/${event.id}/match-requests/${requestId}/accept`)
             .set('Authorization', `Bearer ${tokenA}`)
             .expect(201)
             .expect((response) => {
@@ -85,7 +83,7 @@ describe('Match requests (e2e)', () => {
     });
 
     it('rejects match request', async () => {
-        const { app, event, userA, userB, tokenA, tokenB } =
+        const { app, event, userB, tokenA, tokenB } =
             await setupEventWithParticipants();
 
         const createResponse = await request(app.getHttpServer())
@@ -97,9 +95,7 @@ describe('Match requests (e2e)', () => {
         const requestId = createResponse.body.id as string;
 
         await request(app.getHttpServer())
-            .post(
-                `/v1/events/${event.id}/match-requests/${requestId}/reject`,
-            )
+            .post(`/v1/events/${event.id}/match-requests/${requestId}/reject`)
             .set('Authorization', `Bearer ${tokenB}`)
             .expect(201)
             .expect((response) => {
@@ -145,7 +141,7 @@ describe('Match requests (e2e)', () => {
     });
 
     it('returns 409 for duplicate match request', async () => {
-        const { app, event, userA, userB, tokenA } =
+        const { app, event, userB, tokenA } =
             await setupEventWithParticipants();
 
         await request(app.getHttpServer())
@@ -162,7 +158,8 @@ describe('Match requests (e2e)', () => {
     });
 
     it('returns 400 when sending request to yourself', async () => {
-        const { app, event, userA, tokenA } = await setupEventWithParticipants();
+        const { app, event, userA, tokenA } =
+            await setupEventWithParticipants();
 
         await request(app.getHttpServer())
             .post(`/v1/events/${event.id}/match-requests`)

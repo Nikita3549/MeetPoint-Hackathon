@@ -19,9 +19,9 @@ describe('Users (e2e)', () => {
             .expect(200)
             .expect((response) => {
                 expect(response.body).toHaveLength(2);
-                expect(response.body.map((t: { name: string }) => t.name)).toEqual(
-                    ['backend', 'go'],
-                );
+                expect(
+                    response.body.map((t: { name: string }) => t.name),
+                ).toEqual(['backend', 'go']);
             });
 
         await request(app.getHttpServer())
@@ -73,7 +73,9 @@ describe('Users (e2e)', () => {
                             expect.objectContaining({ name: 'backend' }),
                         ]),
                         contacts: expect.arrayContaining([
-                            expect.objectContaining({ type: ContactType.TELEGRAM }),
+                            expect.objectContaining({
+                                type: ContactType.TELEGRAM,
+                            }),
                         ]),
                     }),
                 );

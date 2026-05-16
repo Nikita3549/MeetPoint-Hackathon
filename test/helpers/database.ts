@@ -3,7 +3,10 @@ import { PrismaClient } from '@prisma/client';
 const E2E_DB_LOCK_KEY = 742_001;
 
 export async function truncateDatabase(
-    prisma: Pick<PrismaClient, '$executeRaw' | '$queryRaw' | '$executeRawUnsafe'>,
+    prisma: Pick<
+        PrismaClient,
+        '$executeRaw' | '$queryRaw' | '$executeRawUnsafe'
+    >,
 ): Promise<void> {
     await prisma.$executeRaw`SELECT pg_advisory_lock(${E2E_DB_LOCK_KEY})`;
 
@@ -15,7 +18,10 @@ export async function truncateDatabase(
 }
 
 async function truncateTables(
-    prisma: Pick<PrismaClient, '$executeRaw' | '$queryRaw' | '$executeRawUnsafe'>,
+    prisma: Pick<
+        PrismaClient,
+        '$executeRaw' | '$queryRaw' | '$executeRawUnsafe'
+    >,
 ): Promise<void> {
     const tables = await prisma.$queryRaw<{ tablename: string }[]>`
         SELECT tablename

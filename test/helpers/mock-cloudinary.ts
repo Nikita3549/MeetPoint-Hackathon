@@ -7,7 +7,10 @@ export function createCloudinaryMock() {
         uploader: {
             upload_stream: (
                 _options: unknown,
-                callback: (error: Error | null, result: UploadApiResponse) => void,
+                callback: (
+                    error: Error | null,
+                    result: UploadApiResponse,
+                ) => void,
             ) => ({
                 end: () => {
                     callback(null, {

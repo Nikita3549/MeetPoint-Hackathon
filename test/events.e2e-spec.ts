@@ -54,7 +54,7 @@ describe('Events (e2e)', () => {
     it('organizer updates event, lists participants and stats', async () => {
         const { app, login, seedUsers, createEvent, registerForEvent } =
             getE2eFixture();
-        const { userA, userB } = await seedUsers();
+        const { userB } = await seedUsers();
 
         const organizerToken = await login('organizer@example.com');
         const tokenA = await login('user-a@example.com');
