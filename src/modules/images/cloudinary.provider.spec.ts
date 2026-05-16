@@ -28,7 +28,9 @@ describe('CloudinaryProvider', () => {
     });
 
     it('configures cloudinary from environment', () => {
-        CloudinaryProvider.useFactory(configService as unknown as ConfigService);
+        CloudinaryProvider.useFactory(
+            configService as unknown as ConfigService,
+        );
 
         expect(cloudinaryConfig).toHaveBeenCalledWith({
             cloud_name: 'test-cloud',

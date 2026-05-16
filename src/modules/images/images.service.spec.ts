@@ -108,9 +108,9 @@ describe('ImagesService', () => {
             }),
         );
 
-        await expect(service.uploadImage('user-1', file)).rejects.toBeInstanceOf(
-            InternalServerErrorException,
-        );
+        await expect(
+            service.uploadImage('user-1', file),
+        ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
 
     it('deleteImage does nothing when image is missing', async () => {
