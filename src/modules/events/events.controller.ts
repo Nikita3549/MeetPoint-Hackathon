@@ -24,6 +24,7 @@ import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
+import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventSlugPipe } from './pipes/event-slug.pipe';
 import { EventsService } from './events.service';
@@ -93,6 +94,21 @@ export class EventsController {
         @Body() dto: CreateEventDto,
     ): Promise<EventResponseDto> {
         return this.eventsService.create(user, dto);
+    }
+
+    @Get(':id/stats')
+    @Roles(UserRole.ORGANIZER)
+    @ApiOperation({ summary: 'Get event statistics for organizer' })
+    @ApiOkResponse({ type: EventStatsResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({
+        description: 'Organizer role required or not event owner',
+    })
+    getStats(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+    ): Promise<EventStatsResponseDto> {
+        return this.eventsService.getStats(user, id);
     }
 
     @Put(':id')

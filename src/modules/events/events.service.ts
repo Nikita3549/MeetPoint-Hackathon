@@ -5,12 +5,13 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
+import { MatchRequestStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
+import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { generateEventSlug } from './utils/generate-event-slug';
 
@@ -192,6 +193,51 @@ export class EventsService {
         });
 
         return this.toResponse(updated);
+    }
+
+    async getStats(
+        user: AuthenticatedUser,
+        eventId: string,
+    ): Promise<EventStatsResponseDto> {
+        await this.ensureOrganizerOwnsEvent(user, eventId);
+
+        const [
+            participantsRegistered,
+            matchRequestsSent,
+            matchRequestsAccepted,
+        ] = await Promise.all([
+            this.prisma.eventParticipant.count({ where: { eventId } }),
+            this.prisma.matchRequest.count({ where: { eventId } }),
+            this.prisma.matchRequest.count({
+                where: { eventId, status: MatchRequestStatus.ACCEPTED },
+            }),
+        ]);
+
+        return {
+            eventId,
+            participantsRegistered,
+            matchRequestsSent,
+            matchRequestsAccepted,
+            acquaintancesMade: matchRequestsAccepted,
+        };
+    }
+
+    private async ensureOrganizerOwnsEvent(
+        user: AuthenticatedUser,
+        eventId: string,
+    ): Promise<void> {
+        const event = await this.prisma.event.findUnique({
+            where: { id: eventId },
+            select: { organizerId: true },
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        if (event.organizerId !== user.id) {
+            throw new ForbiddenException();
+        }
     }
 
     private toResponse(event: EventWithRelations): EventResponseDto {
