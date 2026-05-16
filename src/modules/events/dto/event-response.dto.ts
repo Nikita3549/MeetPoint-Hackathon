@@ -35,6 +35,13 @@ export class EventResponseDto {
     @ApiProperty({ example: 'Annual networking event for developers' })
     description: string;
 
+    @ApiProperty({
+        example:
+            'https://res.cloudinary.com/demo/image/upload/v1234567890/prod_images/cover.jpg',
+        nullable: true,
+    })
+    imageUrl: string | null;
+
     @ApiProperty({ type: EventOrganizerDto })
     organizer: EventOrganizerDto;
 

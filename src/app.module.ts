@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './modules/events/events.module';
+import { MatchRequestsModule } from './modules/match-requests/match-requests.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { UsersModule } from './modules/users/users.module';
         AuthModule,
         UsersModule,
         EventsModule,
+        MatchRequestsModule,
     ],
     controllers: [AppController],
 })

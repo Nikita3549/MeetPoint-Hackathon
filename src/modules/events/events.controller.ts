@@ -6,9 +6,15 @@ import {
     ParseUUIDPipe,
     Post,
     Put,
+    UploadedFile,
+    UseInterceptors,
+    Query,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
     ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
     ApiCreatedResponse,
     ApiForbiddenResponse,
     ApiNotFoundResponse,
@@ -22,9 +28,14 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateEventDto } from './dto/create-event.dto';
+import { EventParticipantResponseDto } from './dto/event-participant-response.dto';
 import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
+import { EventStatsResponseDto } from './dto/event-stats-response.dto';
+import { ListEventParticipantsQueryDto } from './dto/list-event-participants-query.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { MAX_IMAGE_SIZE_BYTES } from '../images/images.constants';
+import { ValidateImageFilePipe } from '../images/pipes/validate-image-file.pipe';
 import { EventSlugPipe } from './pipes/event-slug.pipe';
 import { EventsService } from './events.service';
 
@@ -66,9 +77,7 @@ export class EventsController {
     @ApiOperation({ summary: 'Get event by id' })
     @ApiOkResponse({ type: EventResponseDto })
     @ApiNotFoundResponse({ description: 'Event not found' })
-    findOne(
-        @Param('id', ParseUUIDPipe) id: string,
-    ): Promise<EventResponseDto> {
+    findOne(@Param('id', ParseUUIDPipe) id: string): Promise<EventResponseDto> {
         return this.eventsService.findOne(id);
     }
 
@@ -95,6 +104,34 @@ export class EventsController {
         return this.eventsService.create(user, dto);
     }
 
+    @Get(':id/participants')
+    @ApiOperation({ summary: 'List event participants' })
+    @ApiOkResponse({ type: [EventParticipantResponseDto] })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({ description: 'User is not registered for event' })
+    findParticipants(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Query() query: ListEventParticipantsQueryDto,
+    ): Promise<EventParticipantResponseDto[]> {
+        return this.eventsService.findParticipants(user, id, query.tags);
+    }
+
+    @Get(':id/stats')
+    @Roles(UserRole.ORGANIZER)
+    @ApiOperation({ summary: 'Get event statistics for organizer' })
+    @ApiOkResponse({ type: EventStatsResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({
+        description: 'Organizer role required or not event owner',
+    })
+    getStats(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+    ): Promise<EventStatsResponseDto> {
+        return this.eventsService.getStats(user, id);
+    }
+
     @Put(':id')
     @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Update event' })
@@ -109,5 +146,37 @@ export class EventsController {
         @Body() dto: UpdateEventDto,
     ): Promise<EventResponseDto> {
         return this.eventsService.update(user, id, dto);
+    }
+
+    @Post(':id/image')
+    @Roles(UserRole.ORGANIZER)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
+        }),
+    )
+    @ApiOperation({ summary: 'Upload event cover image' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['file'],
+            properties: {
+                file: { type: 'string', format: 'binary' },
+            },
+            example: { file: 'cover.jpg' },
+        },
+    })
+    @ApiOkResponse({ type: EventResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({
+        description: 'Organizer role required or not event owner',
+    })
+    uploadCoverImage(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+        @UploadedFile(ValidateImageFilePipe) file: Express.Multer.File,
+    ): Promise<EventResponseDto> {
+        return this.eventsService.uploadCoverImage(user, id, file);
     }
 }

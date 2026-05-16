@@ -14,6 +14,8 @@ model User {
   email          String     @unique
   hashedPassword String     @map("hashed_password")
   fullName       String     @map("full_name")
+  avatarImageId  String?    @unique @map("avatar_image_id")
+  avatarImage    Image?     @relation("UserAvatar", fields: [avatarImageId], references: [id], onDelete: SetNull)
   role           UserRole   @default(USER)
   status         UserStatus @default(ACTIVE)
 
@@ -31,6 +33,9 @@ model User {
   contacts            UserContact[]
   organizedEvents     Event[]
   eventParticipations EventParticipant[]
+  uploadedImages      Image[]         @relation("UploadedImages")
+  sentMatchRequests    MatchRequest[] @relation("SentMatchRequests")
+  receivedMatchRequests MatchRequest[] @relation("ReceivedMatchRequests")
 
   @@index([status])
   @@index([role])

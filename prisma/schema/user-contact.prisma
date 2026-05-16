@@ -1,5 +1,7 @@
 enum ContactType {
   TELEGRAM
+  LINKEDIN
+  VK
   EMAIL
   PHONE
 }

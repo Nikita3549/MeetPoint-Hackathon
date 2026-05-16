@@ -8,15 +8,17 @@ ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x,linux-arm64-openssl-3.0.x
 COPY package.json nest-cli.json ./
 RUN npm install
 
-COPY ./src  ./src
+COPY ./src ./src
 COPY ./prisma ./prisma
+COPY ./tests ./tests
+COPY eslint.config.mjs .prettierrc .prettierignore ./
 
 RUN npx prisma generate --schema prisma/schema
 
-# Offline runtime fix
 RUN npx prisma --version
 
 COPY tsconfig.json tsconfig.build.json ./
+RUN npm run lint && npm run format:check
 RUN npm run build
 
 FROM node:22-slim
