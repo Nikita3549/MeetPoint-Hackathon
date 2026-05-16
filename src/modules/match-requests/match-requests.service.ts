@@ -6,38 +6,64 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { MatchRequest, MatchRequestStatus, Prisma } from '@prisma/client';
-import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
-import { UserContactResponseDto } from '../users/dto/user-contact-response.dto';
 import { CreateMatchRequestDto } from './dto/create-match-request.dto';
 import { MatchRequestResponseDto } from './dto/match-request-response.dto';
 import { MatchRequestUserDto } from './dto/match-request-user.dto';
 import { MatchResponseDto } from './dto/match-response.dto';
 
-type MatchRequestWithUsers = {
-    id: string;
-    eventId: string;
-    fromUserId: string;
-    toUserId: string;
-    status: MatchRequestStatus;
-    createdAt: Date;
-    updatedAt: Date;
-    respondedAt: Date | null;
-    fromUser: MatchRequestUserWithEventTags;
-    toUser: MatchRequestUserWithEventTags;
-};
+function buildMatchRequestUserSelect(eventId: string, withContacts?: boolean) {
+    return {
+        id: true,
+        fullName: true,
+        eventParticipations: {
+            where: { eventId },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' as const },
+                },
+            },
+        },
+        ...(withContacts
+            ? {
+                  contacts: {
+                      orderBy: [
+                          { type: 'asc' as const },
+                          { createdAt: 'asc' as const },
+                      ],
+                  },
+              }
+            : {}),
+    } satisfies Prisma.UserSelect;
+}
 
-type MatchRequestUserWithEventTags = {
-    id: string;
-    fullName: string;
-    eventParticipations: { tags: TagResponseDto[] }[];
-    contacts?: {
-        id: string;
-        type: UserContactResponseDto['type'];
-        value: string;
-    }[];
-};
+function buildMatchRequestInclude(
+    eventId: string,
+    options?: { withContacts?: boolean },
+) {
+    const select = buildMatchRequestUserSelect(eventId, options?.withContacts);
+
+    return {
+        fromUser: { select },
+        toUser: { select },
+    } satisfies Prisma.MatchRequestInclude;
+}
+
+function buildMatchRequestIncludeWithContacts(eventId: string) {
+    return buildMatchRequestInclude(eventId, { withContacts: true });
+}
+
+type MatchRequestWithUsers = Prisma.MatchRequestGetPayload<{
+    include: ReturnType<typeof buildMatchRequestInclude>;
+}>;
+
+type MatchRequestWithUsersAndContacts = Prisma.MatchRequestGetPayload<{
+    include: ReturnType<typeof buildMatchRequestIncludeWithContacts>;
+}>;
+
+type MatchRequestUserSelected = MatchRequestWithUsers['fromUser'];
 
 @Injectable()
 export class MatchRequestsService {
@@ -93,7 +119,7 @@ export class MatchRequestsService {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt: new Date(),
                 },
-                include: this.buildMatchRequestInclude(eventId),
+                include: buildMatchRequestInclude(eventId),
             });
 
             return this.toResponse(accepted);
@@ -105,7 +131,7 @@ export class MatchRequestsService {
                 fromUserId: user.id,
                 toUserId: dto.toUserId,
             },
-            include: this.buildMatchRequestInclude(eventId),
+            include: buildMatchRequestInclude(eventId),
         });
 
         return this.toResponse(created);
@@ -124,7 +150,7 @@ export class MatchRequestsService {
                 toUserId: user.id,
                 status: MatchRequestStatus.PENDING,
             },
-            include: this.buildMatchRequestInclude(eventId),
+            include: buildMatchRequestInclude(eventId),
             orderBy: { createdAt: 'desc' },
         });
 
@@ -144,7 +170,7 @@ export class MatchRequestsService {
                 fromUserId: user.id,
                 status: MatchRequestStatus.PENDING,
             },
-            include: this.buildMatchRequestInclude(eventId),
+            include: buildMatchRequestInclude(eventId),
             orderBy: { createdAt: 'desc' },
         });
 
@@ -172,7 +198,7 @@ export class MatchRequestsService {
                 status: MatchRequestStatus.ACCEPTED,
                 respondedAt: new Date(),
             },
-            include: this.buildMatchRequestInclude(eventId),
+            include: buildMatchRequestInclude(eventId),
         });
 
         return this.toResponse(updated);
@@ -199,7 +225,7 @@ export class MatchRequestsService {
                 status: MatchRequestStatus.REJECTED,
                 respondedAt: new Date(),
             },
-            include: this.buildMatchRequestInclude(eventId),
+            include: buildMatchRequestInclude(eventId),
         });
 
         return this.toResponse(updated);
@@ -218,9 +244,7 @@ export class MatchRequestsService {
                 status: MatchRequestStatus.ACCEPTED,
                 OR: [{ fromUserId: user.id }, { toUserId: user.id }],
             },
-            include: this.buildMatchRequestInclude(eventId, {
-                withContacts: true,
-            }),
+            include: buildMatchRequestIncludeWithContacts(eventId),
             orderBy: { respondedAt: 'desc' },
         });
 
@@ -299,7 +323,7 @@ export class MatchRequestsService {
     }
 
     private toMatchResponse(
-        request: MatchRequestWithUsers,
+        request: MatchRequestWithUsersAndContacts,
         currentUserId: string,
     ): MatchResponseDto {
         const matchedUser =
@@ -319,40 +343,7 @@ export class MatchRequestsService {
         };
     }
 
-    private buildMatchRequestInclude(
-        eventId: string,
-        options?: { withContacts?: boolean },
-    ): Prisma.MatchRequestInclude {
-        const userSelect: Prisma.UserSelect = {
-            id: true,
-            fullName: true,
-            eventParticipations: {
-                where: { eventId },
-                select: {
-                    tags: {
-                        select: { id: true, name: true },
-                        orderBy: { name: 'asc' },
-                    },
-                },
-            },
-            ...(options?.withContacts
-                ? {
-                      contacts: {
-                          orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
-                      },
-                  }
-                : {}),
-        };
-
-        return {
-            fromUser: { select: userSelect },
-            toUser: { select: userSelect },
-        };
-    }
-
-    private toUserDto(
-        user: MatchRequestUserWithEventTags,
-    ): MatchRequestUserDto {
+    private toUserDto(user: MatchRequestUserSelected): MatchRequestUserDto {
         return {
             id: user.id,
             fullName: user.fullName,
