@@ -18,7 +18,9 @@ test:
   stage: test
   image: node:22-alpine
   before_script:
+    - apk add --no-cache openssl
     - npm ci --ignore-scripts
+    - npx prisma generate --schema prisma/schema
   script:
     - npm run test:cov
   coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d.]+)/'
