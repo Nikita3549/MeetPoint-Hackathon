@@ -16,11 +16,11 @@ lint:
 
 test:
   stage: test
-  image: node:22-alpine
+  image: node:22-slim
   variables:
     DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
   before_script:
-    - apk add --no-cache openssl
+    - apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates
     - npm ci --ignore-scripts
     - npx prisma generate --schema prisma/schema
   script:
