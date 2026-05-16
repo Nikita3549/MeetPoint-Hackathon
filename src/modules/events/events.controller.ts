@@ -6,6 +6,7 @@ import {
     ParseUUIDPipe,
     Post,
     Put,
+    Query,
 } from '@nestjs/common';
 import {
     ApiBearerAuth,
@@ -22,9 +23,11 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateEventDto } from './dto/create-event.dto';
+import { EventParticipantResponseDto } from './dto/event-participant-response.dto';
 import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
 import { EventStatsResponseDto } from './dto/event-stats-response.dto';
+import { ListEventParticipantsQueryDto } from './dto/list-event-participants-query.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventSlugPipe } from './pipes/event-slug.pipe';
 import { EventsService } from './events.service';
@@ -94,6 +97,19 @@ export class EventsController {
         @Body() dto: CreateEventDto,
     ): Promise<EventResponseDto> {
         return this.eventsService.create(user, dto);
+    }
+
+    @Get(':id/participants')
+    @ApiOperation({ summary: 'List event participants' })
+    @ApiOkResponse({ type: [EventParticipantResponseDto] })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({ description: 'User is not registered for event' })
+    findParticipants(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Query() query: ListEventParticipantsQueryDto,
+    ): Promise<EventParticipantResponseDto[]> {
+        return this.eventsService.findParticipants(user, id, query.tags);
     }
 
     @Get(':id/stats')

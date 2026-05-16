@@ -9,7 +9,9 @@ import {
 import { JWT_AUTH_SCHEME } from '../../swagger/swagger.constants';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
+import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { SetUserContactsDto } from './dto/set-user-contacts.dto';
+import { SetUserTagsDto } from './dto/set-user-tags.dto';
 import { UserContactResponseDto } from './dto/user-contact-response.dto';
 import { UsersService } from './users.service';
 
@@ -18,6 +20,24 @@ import { UsersService } from './users.service';
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
+
+    @Get('me/tags')
+    @ApiOperation({ summary: 'List current user tags' })
+    @ApiOkResponse({ type: [TagResponseDto] })
+    getTags(@CurrentUser() user: AuthenticatedUser): Promise<TagResponseDto[]> {
+        return this.usersService.getTags(user.id);
+    }
+
+    @Put('me/tags')
+    @ApiOperation({ summary: 'Set current user tags' })
+    @ApiOkResponse({ type: [TagResponseDto] })
+    @ApiBadRequestResponse({ description: 'Invalid tags' })
+    setTags(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() dto: SetUserTagsDto,
+    ): Promise<TagResponseDto[]> {
+        return this.usersService.setTags(user, dto);
+    }
 
     @Get('me/contacts')
     @ApiOperation({ summary: 'List current user contacts' })

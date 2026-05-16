@@ -1,14 +1,58 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ContactType, UserContact } from '@prisma/client';
+import { TagResponseDto } from '../../common/dto/tag-response.dto';
+import { TagsService } from '../../common/tags/tags.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { SetUserContactsDto } from './dto/set-user-contacts.dto';
+import { SetUserTagsDto } from './dto/set-user-tags.dto';
 import { UserContactItemDto } from './dto/user-contact-item.dto';
 import { UserContactResponseDto } from './dto/user-contact-response.dto';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly tagsService: TagsService,
+    ) {}
+
+    async getTags(userId: string): Promise<TagResponseDto[]> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+            },
+        });
+
+        return user?.tags ?? [];
+    }
+
+    async setTags(
+        user: AuthenticatedUser,
+        dto: SetUserTagsDto,
+    ): Promise<TagResponseDto[]> {
+        const tagIds = await this.tagsService.resolveTagIds(dto.tags);
+
+        const updated = await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                tags: {
+                    set: tagIds.map((id) => ({ id })),
+                },
+            },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+            },
+        });
+
+        return updated.tags;
+    }
 
     async getContacts(userId: string): Promise<UserContactResponseDto[]> {
         const contacts = await this.prisma.userContact.findMany({
