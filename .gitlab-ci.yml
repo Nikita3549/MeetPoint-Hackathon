@@ -80,9 +80,8 @@ e2e-tests:
 
 deploy:
   stage: deploy
-  image: alpine:latest
+  image: alpine/git:2.47.2
   before_script:
-    - apk add --no-cache openssh-client
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - printf "%b\n" "$CI_BACKEND_SSH_KEY" > ~/.ssh/id.pem
     - chmod 600 ~/.ssh/id.pem
