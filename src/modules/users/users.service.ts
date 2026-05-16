@@ -14,6 +14,43 @@ import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
+    async getTags(userId: string): Promise<TagResponseDto[]> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+            },
+        });
+
+        return user?.tags ?? [];
+    }
+
+    async setTags(
+        user: AuthenticatedUser,
+        dto: SetUserTagsDto,
+    ): Promise<TagResponseDto[]> {
+        const tagIds = await this.tagsService.resolveTagIds(dto.tags);
+
+        const updated = await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                tags: {
+                    set: tagIds.map((id) => ({ id })),
+                },
+            },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+            },
+        });
+
+        return updated.tags;
+    }
     constructor(
         private readonly prisma: PrismaService,
         private readonly imagesService: ImagesService,
@@ -67,44 +104,6 @@ export class UsersService {
             updatedAt: user.updatedAt,
             avatarImage: user.avatarImage || null,
         };
-    }
-
-    async getTags(userId: string): Promise<TagResponseDto[]> {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                tags: {
-                    select: { id: true, name: true },
-                    orderBy: { name: 'asc' },
-                },
-            },
-        });
-
-        return user?.tags ?? [];
-    }
-
-    async setTags(
-        user: AuthenticatedUser,
-        dto: SetUserTagsDto,
-    ): Promise<TagResponseDto[]> {
-        const tagIds = await this.tagsService.resolveTagIds(dto.tags);
-
-        const updated = await this.prisma.user.update({
-            where: { id: user.id },
-            data: {
-                tags: {
-                    set: tagIds.map((id) => ({ id })),
-                },
-            },
-            select: {
-                tags: {
-                    select: { id: true, name: true },
-                    orderBy: { name: 'asc' },
-                },
-            },
-        });
-
-        return updated.tags;
     }
 
     async getContacts(userId: string): Promise<UserContactResponseDto[]> {

@@ -1,5 +1,7 @@
 stages:
   - lint
+  - lint
+  - test
   - deploy
 
 lint:
@@ -10,6 +12,28 @@ lint:
   script:
     - npm run lint
     - npm run format:check
+  only:
+    - master
+
+test:
+  stage: test
+  image: node:22-bookworm
+  variables:
+    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+  before_script:
+    - npm ci --ignore-scripts
+    - npx prisma generate --schema prisma/schema
+  script:
+    - npm run test:cov
+  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d.]+)/'
+  artifacts:
+    when: always
+    paths:
+      - coverage/
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
   only:
     - master
 
