@@ -27,10 +27,12 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tags                Tag[]
-  contacts            UserContact[]
-  organizedEvents     Event[]
-  eventParticipations EventParticipant[]
+  tags                 Tag[]
+  contacts             UserContact[]
+  organizedEvents      Event[]
+  eventParticipations  EventParticipant[]
+  sentMatchRequests    MatchRequest[] @relation("SentMatchRequests")
+  receivedMatchRequests MatchRequest[] @relation("ReceivedMatchRequests")
 
   @@index([status])
   @@index([role])

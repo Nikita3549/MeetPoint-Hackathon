@@ -1,7 +1,4 @@
-import {
-    BadRequestException,
-    Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ContactType, UserContact } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
@@ -54,7 +51,9 @@ export class UsersService {
         return contacts.map((contact) => this.toResponse(contact));
     }
 
-    private normalizeContacts(contacts: UserContactItemDto[]): UserContactItemDto[] {
+    private normalizeContacts(
+        contacts: UserContactItemDto[],
+    ): UserContactItemDto[] {
         const seen = new Set<string>();
         const result: UserContactItemDto[] = [];
 
@@ -64,8 +63,6 @@ export class UsersService {
             if (value.length === 0) {
                 continue;
             }
-
-            this.validateContactValue(contact.type, value);
 
             const key = `${contact.type}:${value.toLowerCase()}`;
 
@@ -78,36 +75,6 @@ export class UsersService {
         }
 
         return result;
-    }
-
-    private validateContactValue(type: ContactType, value: string): void {
-        if (type === ContactType.EMAIL) {
-            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            if (!emailPattern.test(value)) {
-                throw new BadRequestException('Invalid email contact');
-            }
-
-            return;
-        }
-
-        if (type === ContactType.PHONE) {
-            const digits = value.replace(/\D/g, '');
-
-            if (digits.length < 10 || digits.length > 15) {
-                throw new BadRequestException('Invalid phone contact');
-            }
-
-            return;
-        }
-
-        if (type === ContactType.TELEGRAM) {
-            const username = value.startsWith('@') ? value.slice(1) : value;
-
-            if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
-                throw new BadRequestException('Invalid telegram contact');
-            }
-        }
     }
 
     private toResponse(contact: UserContact): UserContactResponseDto {
