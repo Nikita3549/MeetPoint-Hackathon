@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TagResponseDto } from '../../../common/dto/tag-response.dto';
+import { UserContactResponseDto } from '../../users/dto/user-contact-response.dto';
 
 export class LoginResponseDto {
     @ApiProperty({
@@ -6,4 +8,13 @@ export class LoginResponseDto {
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature',
     })
     accessToken: string;
+
+    @ApiProperty({ example: 'Jane Doe' })
+    name: string;
+
+    @ApiProperty({ type: [UserContactResponseDto] })
+    contacts: UserContactResponseDto[];
+
+    @ApiProperty({ type: [TagResponseDto] })
+    tags: TagResponseDto[];
 }

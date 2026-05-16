@@ -317,8 +317,6 @@ export class MatchRequestsService {
                     id: string;
                     type: UserContactResponseDto['type'];
                     value: string;
-                    createdAt: Date;
-                    updatedAt: Date;
                 }[];
             };
             toUser: MatchRequestWithUsers['toUser'] & {
@@ -326,8 +324,6 @@ export class MatchRequestsService {
                     id: string;
                     type: UserContactResponseDto['type'];
                     value: string;
-                    createdAt: Date;
-                    updatedAt: Date;
                 }[];
             };
         },
@@ -345,8 +341,6 @@ export class MatchRequestsService {
                 id: contact.id,
                 type: contact.type,
                 value: contact.value,
-                createdAt: contact.createdAt,
-                updatedAt: contact.updatedAt,
             })),
             matchedAt: request.respondedAt ?? request.updatedAt,
         };

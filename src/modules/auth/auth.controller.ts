@@ -1,5 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
+    Body,
+    Controller,
+    HttpCode,
+    HttpStatus,
+    Post,
+} from '@nestjs/common';
+import {
+    ApiConflictResponse,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
@@ -23,5 +30,15 @@ export class AuthController {
     @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
     login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
         return this.authService.login(dto);
+    }
+
+    @Public()
+    @Post('register')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Register with email and password' })
+    @ApiOkResponse({ type: LoginResponseDto })
+    @ApiConflictResponse({ description: 'Email already registered' })
+    register(@Body() dto: LoginDto): Promise<LoginResponseDto> {
+        return this.authService.register(dto);
     }
 }

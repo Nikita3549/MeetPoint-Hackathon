@@ -285,6 +285,11 @@ describe('MatchRequestsService', () => {
                 createdAt: new Date('2025-01-01'),
                 updatedAt: new Date('2025-01-01'),
             };
+            const contactResponse = {
+                id: 'contact-1',
+                type: 'TELEGRAM',
+                value: '@user',
+            };
             prisma.matchRequest.findMany.mockResolvedValue([
                 {
                     ...matchRequestRecord,
@@ -309,7 +314,7 @@ describe('MatchRequestsService', () => {
                 {
                     matchRequestId: 'req-1',
                     user: { id: 'user-b', fullName: 'User B' },
-                    contacts: [contact],
+                    contacts: [contactResponse],
                     matchedAt: respondedAt,
                 },
             ]);

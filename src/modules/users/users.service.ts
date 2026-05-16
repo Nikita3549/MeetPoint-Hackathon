@@ -201,8 +201,6 @@ export class UsersService {
             id: contact.id,
             type: contact.type,
             value: contact.value,
-            createdAt: contact.createdAt,
-            updatedAt: contact.updatedAt,
         };
     }
 }

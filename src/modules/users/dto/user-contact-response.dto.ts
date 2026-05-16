@@ -10,10 +10,4 @@ export class UserContactResponseDto {
 
     @ApiProperty({ example: '@username' })
     value: string;
-
-    @ApiProperty({ example: '2026-05-15T12:00:00.000Z' })
-    createdAt: Date;
-
-    @ApiProperty({ example: '2026-05-15T12:00:00.000Z' })
-    updatedAt: Date;
 }

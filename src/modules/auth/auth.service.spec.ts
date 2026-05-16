@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole, UserStatus } from '@prisma/client';
@@ -14,6 +14,7 @@ describe('AuthService', () => {
         user: {
             findUnique: jest.fn(),
             update: jest.fn(),
+            create: jest.fn(),
         },
     };
     const jwtService = {
@@ -24,9 +25,20 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'user@example.com',
         hashedPassword: 'hash',
+        fullName: 'Jane Doe',
         role: UserRole.PARTICIPANT,
         status: UserStatus.ACTIVE,
         deletedAt: null,
+        tags: [{ id: 'tag-1', name: 'frontend' }],
+        contacts: [
+            {
+                id: 'contact-1',
+                type: 'TELEGRAM',
+                value: '@jane',
+                createdAt: new Date('2026-05-15T12:00:00.000Z'),
+                updatedAt: new Date('2026-05-15T12:00:00.000Z'),
+            },
+        ],
     };
 
     beforeEach(async () => {
@@ -50,7 +62,18 @@ describe('AuthService', () => {
 
         await expect(
             service.login({ email: 'user@example.com', password: 'secret' }),
-        ).resolves.toEqual({ accessToken: 'token' });
+        ).resolves.toEqual({
+            accessToken: 'token',
+            name: 'Jane Doe',
+            tags: [{ id: 'tag-1', name: 'frontend' }],
+            contacts: [
+                {
+                    id: 'contact-1',
+                    type: 'TELEGRAM',
+                    value: '@jane',
+                },
+            ],
+        });
 
         expect(prisma.user.update).toHaveBeenCalledWith({
             where: { id: 'user-1' },
@@ -100,5 +123,52 @@ describe('AuthService', () => {
         await expect(
             service.login({ email: 'user@example.com', password: 'wrong' }),
         ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('creates user and returns access token on register', async () => {
+        prisma.user.findUnique.mockResolvedValue(null);
+        (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+        prisma.user.create.mockResolvedValue(activeUser);
+        jwtService.signAsync.mockResolvedValue('token');
+
+        await expect(
+            service.register({
+                email: 'user@example.com',
+                password: 'secret',
+            }),
+        ).resolves.toEqual({
+            accessToken: 'token',
+            name: 'Jane Doe',
+            tags: [{ id: 'tag-1', name: 'frontend' }],
+            contacts: [
+                {
+                    id: 'contact-1',
+                    type: 'TELEGRAM',
+                    value: '@jane',
+                },
+            ],
+        });
+
+        expect(bcrypt.hash).toHaveBeenCalledWith('secret', 10);
+        expect(prisma.user.create).toHaveBeenCalledWith({
+            data: {
+                email: 'user@example.com',
+                hashedPassword: 'hashed',
+                fullName: 'user',
+                lastLoginAt: expect.any(Date),
+            },
+            include: expect.any(Object),
+        });
+    });
+
+    it('throws when email is already registered', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 'user-1' });
+
+        await expect(
+            service.register({
+                email: 'user@example.com',
+                password: 'secret',
+            }),
+        ).rejects.toThrow(ConflictException);
     });
 });

@@ -83,8 +83,6 @@ describe('UsersService', () => {
                         id: 'contact-1',
                         type: ContactType.TELEGRAM,
                         value: '@user',
-                        createdAt,
-                        updatedAt,
                     },
                 ],
                 createdAt,
@@ -151,8 +149,6 @@ describe('UsersService', () => {
                     id: 'contact-1',
                     type: ContactType.EMAIL,
                     value: 'user@example.com',
-                    createdAt,
-                    updatedAt,
                 },
             ]);
         });
@@ -204,8 +200,6 @@ describe('UsersService', () => {
                     id: 'contact-1',
                     type: ContactType.TELEGRAM,
                     value: '@user',
-                    createdAt,
-                    updatedAt,
                 },
             ]);
 

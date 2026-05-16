@@ -6,6 +6,7 @@ describe('AuthController', () => {
     let controller: AuthController;
     const authService = {
         login: jest.fn(),
+        register: jest.fn(),
     };
 
     beforeEach(async () => {
@@ -25,5 +26,14 @@ describe('AuthController', () => {
 
         await expect(controller.login(dto)).resolves.toBe(response);
         expect(authService.login).toHaveBeenCalledWith(dto);
+    });
+
+    it('delegates register to service', async () => {
+        const dto = { email: 'user@example.com', password: 'secret' };
+        const response = { accessToken: 'token' };
+        authService.register.mockResolvedValue(response);
+
+        await expect(controller.register(dto)).resolves.toBe(response);
+        expect(authService.register).toHaveBeenCalledWith(dto);
     });
 });
