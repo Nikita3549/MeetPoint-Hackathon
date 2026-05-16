@@ -338,10 +338,7 @@ export class MatchRequestsService {
             ...(options?.withContacts
                 ? {
                       contacts: {
-                          orderBy: [
-                              { type: 'asc' },
-                              { createdAt: 'asc' },
-                          ],
+                          orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
                       },
                   }
                 : {}),
@@ -353,7 +350,9 @@ export class MatchRequestsService {
         };
     }
 
-    private toUserDto(user: MatchRequestUserWithEventTags): MatchRequestUserDto {
+    private toUserDto(
+        user: MatchRequestUserWithEventTags,
+    ): MatchRequestUserDto {
         return {
             id: user.id,
             fullName: user.fullName,
