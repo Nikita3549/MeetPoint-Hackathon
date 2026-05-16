@@ -16,6 +16,7 @@ import {
     ApiBody,
     ApiConsumes,
     ApiCreatedResponse,
+    ApiBadRequestResponse,
     ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
@@ -33,7 +34,9 @@ import { EventRegistrationResponseDto } from './dto/event-registration-response.
 import { EventResponseDto } from './dto/event-response.dto';
 import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { ListEventParticipantsQueryDto } from './dto/list-event-participants-query.dto';
+import { SetParticipantTagsDto } from './dto/set-participant-tags.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { MAX_IMAGE_SIZE_BYTES } from '../images/images.constants';
 import { ValidateImageFilePipe } from '../images/pipes/validate-image-file.pipe';
 import { EventSlugPipe } from './pipes/event-slug.pipe';
@@ -102,6 +105,32 @@ export class EventsController {
         @Body() dto: CreateEventDto,
     ): Promise<EventResponseDto> {
         return this.eventsService.create(user, dto);
+    }
+
+    @Get(':id/participants/me/tags')
+    @ApiOperation({ summary: 'List current user tags for event' })
+    @ApiOkResponse({ type: [TagResponseDto] })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({ description: 'User is not registered for event' })
+    getMyTags(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+    ): Promise<TagResponseDto[]> {
+        return this.eventsService.getMyTags(user, id);
+    }
+
+    @Put(':id/participants/me/tags')
+    @ApiOperation({ summary: 'Set current user tags for event' })
+    @ApiOkResponse({ type: [TagResponseDto] })
+    @ApiBadRequestResponse({ description: 'Invalid tags' })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({ description: 'User is not registered for event' })
+    setMyTags(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: SetParticipantTagsDto,
+    ): Promise<TagResponseDto[]> {
+        return this.eventsService.setMyTags(user, id, dto);
     }
 
     @Get(':id/participants')

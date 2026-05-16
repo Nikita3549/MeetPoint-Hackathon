@@ -17,6 +17,7 @@ import { EventRegistrationResponseDto } from './dto/event-registration-response.
 import { EventResponseDto } from './dto/event-response.dto';
 import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { UserEventResponseDto } from './dto/user-event-response.dto';
+import { SetParticipantTagsDto } from './dto/set-participant-tags.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { generateEventSlug } from './utils/generate-event-slug';
 
@@ -261,6 +262,49 @@ export class EventsService {
         return this.toResponse(updated);
     }
 
+    async getMyTags(
+        user: AuthenticatedUser,
+        eventId: string,
+    ): Promise<TagResponseDto[]> {
+        await this.ensureEventExists(eventId);
+        const participant = await this.findParticipation(eventId, user.id);
+
+        return participant.tags;
+    }
+
+    async setMyTags(
+        user: AuthenticatedUser,
+        eventId: string,
+        dto: SetParticipantTagsDto,
+    ): Promise<TagResponseDto[]> {
+        await this.ensureEventExists(eventId);
+        await this.ensureParticipant(eventId, user.id);
+
+        const tagIds = await this.tagsService.resolveTagIds(dto.tags);
+
+        const updated = await this.prisma.eventParticipant.update({
+            where: {
+                userId_eventId: {
+                    userId: user.id,
+                    eventId,
+                },
+            },
+            data: {
+                tags: {
+                    set: tagIds.map((id) => ({ id })),
+                },
+            },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+            },
+        });
+
+        return updated.tags;
+    }
+
     async findParticipants(
         user: AuthenticatedUser,
         eventId: string,
@@ -282,27 +326,27 @@ export class EventsService {
                 user: {
                     status: UserStatus.ACTIVE,
                     deletedAt: null,
-                    ...(tagIds.length > 0
-                        ? {
-                              AND: tagIds.map((tagId) => ({
-                                  tags: { some: { id: tagId } },
-                              })),
-                          }
-                        : {}),
                 },
+                ...(tagIds.length > 0
+                    ? {
+                          AND: tagIds.map((tagId) => ({
+                              tags: { some: { id: tagId } },
+                          })),
+                      }
+                    : {}),
             },
             include: {
+                tags: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                    orderBy: { name: 'asc' },
+                },
                 user: {
                     select: {
                         id: true,
                         fullName: true,
-                        tags: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                            orderBy: { name: 'asc' },
-                        },
                     },
                 },
             },
@@ -356,6 +400,13 @@ export class EventsService {
         eventId: string,
         userId: string,
     ): Promise<void> {
+        await this.findParticipation(eventId, userId);
+    }
+
+    private async findParticipation(
+        eventId: string,
+        userId: string,
+    ): Promise<{ tags: TagResponseDto[] }> {
         const participant = await this.prisma.eventParticipant.findUnique({
             where: {
                 userId_eventId: {
@@ -363,7 +414,12 @@ export class EventsService {
                     eventId,
                 },
             },
-            select: { id: true },
+            select: {
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+            },
         });
 
         if (!participant) {
@@ -371,6 +427,8 @@ export class EventsService {
                 'User is not registered for this event',
             );
         }
+
+        return participant;
     }
 
     private async ensureOrganizerOwnsEvent(
@@ -417,16 +475,16 @@ export class EventsService {
 
     private toParticipantResponse(participant: {
         createdAt: Date;
+        tags: TagResponseDto[];
         user: {
             id: string;
             fullName: string;
-            tags: TagResponseDto[];
         };
     }): EventParticipantResponseDto {
         return {
             userId: participant.user.id,
             fullName: participant.user.fullName,
-            tags: participant.user.tags,
+            tags: participant.tags,
             registeredAt: participant.createdAt,
         };
     }
@@ -457,31 +515,5 @@ export class EventsService {
         }
 
         throw new InternalServerErrorException('Failed to generate event link');
-    }
-
-    private async resolveTagIds(tagNames: string[]): Promise<string[]> {
-        const uniqueNames = [
-            ...new Set(
-                tagNames
-                    .map((name) => name.trim())
-                    .filter((name) => name.length > 0),
-            ),
-        ];
-
-        if (uniqueNames.length === 0) {
-            return [];
-        }
-
-        const tags = await Promise.all(
-            uniqueNames.map((name) =>
-                this.prisma.tag.upsert({
-                    where: { name },
-                    create: { name },
-                    update: {},
-                }),
-            ),
-        );
-
-        return tags.map((tag) => tag.id);
     }
 }

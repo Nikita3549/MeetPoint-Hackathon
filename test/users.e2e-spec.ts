@@ -6,31 +6,11 @@ import { TEST_PNG_BUFFER } from './helpers/test-image';
 describe('Users (e2e)', () => {
     registerE2eHooks();
 
-    it('manages profile tags and contacts', async () => {
+    it('manages profile contacts', async () => {
         const { app, login, seedUsers } = getE2eFixture();
         await seedUsers();
 
         const token = await login('user-a@example.com');
-
-        await request(app.getHttpServer())
-            .put('/v1/users/me/tags')
-            .set('Authorization', `Bearer ${token}`)
-            .send({ tags: ['backend', 'go'] })
-            .expect(200)
-            .expect((response) => {
-                expect(response.body).toHaveLength(2);
-                expect(
-                    response.body.map((t: { name: string }) => t.name),
-                ).toEqual(['backend', 'go']);
-            });
-
-        await request(app.getHttpServer())
-            .get('/v1/users/me/tags')
-            .set('Authorization', `Bearer ${token}`)
-            .expect(200)
-            .expect((response) => {
-                expect(response.body).toHaveLength(2);
-            });
 
         await request(app.getHttpServer())
             .put('/v1/users/me/contacts')
@@ -69,9 +49,6 @@ describe('Users (e2e)', () => {
                 expect(response.body).toEqual(
                     expect.objectContaining({
                         email: 'user-a@example.com',
-                        tags: expect.arrayContaining([
-                            expect.objectContaining({ name: 'backend' }),
-                        ]),
                         contacts: expect.arrayContaining([
                             expect.objectContaining({
                                 type: ContactType.TELEGRAM,

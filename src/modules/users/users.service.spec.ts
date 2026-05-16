@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactType, UserRole, UserStatus } from '@prisma/client';
-import { TagsService } from '../../common/tags/tags.service';
 import { ImagesService } from '../images/images.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from './users.service';
@@ -21,9 +20,6 @@ describe('UsersService', () => {
         },
         $transaction: jest.fn(),
     };
-    const tagsService = {
-        resolveTagIds: jest.fn(),
-    };
     const imagesService = {
         uploadImage: jest.fn(),
         deleteImage: jest.fn(),
@@ -40,7 +36,6 @@ describe('UsersService', () => {
             providers: [
                 UsersService,
                 { provide: PrismaService, useValue: prisma },
-                { provide: TagsService, useValue: tagsService },
                 { provide: ImagesService, useValue: imagesService },
             ],
         }).compile();
@@ -63,7 +58,6 @@ describe('UsersService', () => {
                 emailVerifiedAt: createdAt,
                 createdAt,
                 updatedAt,
-                tags: [{ id: 'tag-1', name: 'Go' }],
                 contacts: [
                     {
                         id: 'contact-1',
@@ -83,7 +77,6 @@ describe('UsersService', () => {
                 status: UserStatus.ACTIVE,
                 emailVerified: true,
                 emailVerifiedAt: createdAt,
-                tags: [{ id: 'tag-1', name: 'Go' }],
                 contacts: [
                     {
                         id: 'contact-1',
@@ -103,37 +96,6 @@ describe('UsersService', () => {
             await expect(service.getMe('missing')).rejects.toThrow(
                 NotFoundException,
             );
-        });
-    });
-
-    describe('getTags', () => {
-        it('returns tags for user', async () => {
-            prisma.user.findUnique.mockResolvedValue({
-                tags: [{ id: 'tag-1', name: 'Go' }],
-            });
-
-            await expect(service.getTags('user-1')).resolves.toEqual([
-                { id: 'tag-1', name: 'Go' },
-            ]);
-        });
-
-        it('returns empty array when user is missing', async () => {
-            prisma.user.findUnique.mockResolvedValue(null);
-
-            await expect(service.getTags('missing')).resolves.toEqual([]);
-        });
-    });
-
-    describe('setTags', () => {
-        it('updates user tags', async () => {
-            tagsService.resolveTagIds.mockResolvedValue(['tag-1']);
-            prisma.user.update.mockResolvedValue({
-                tags: [{ id: 'tag-1', name: 'Go' }],
-            });
-
-            await expect(
-                service.setTags(authUser, { tags: ['Go'] }),
-            ).resolves.toEqual([{ id: 'tag-1', name: 'Go' }]);
         });
     });
 

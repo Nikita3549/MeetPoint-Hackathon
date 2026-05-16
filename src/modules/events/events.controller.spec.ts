@@ -13,6 +13,8 @@ describe('EventsController', () => {
         register: jest.fn(),
         create: jest.fn(),
         findParticipants: jest.fn(),
+        getMyTags: jest.fn(),
+        setMyTags: jest.fn(),
         getStats: jest.fn(),
         update: jest.fn(),
         uploadCoverImage: jest.fn(),
@@ -62,6 +64,29 @@ describe('EventsController', () => {
             id: 'event-1',
         });
         expect(eventsService.create).toHaveBeenCalledWith(user, dto);
+    });
+
+    it('delegates setMyTags', async () => {
+        const dto = { tags: ['Go'] };
+        eventsService.setMyTags.mockResolvedValue([]);
+
+        await expect(
+            controller.setMyTags(user, 'event-1', dto),
+        ).resolves.toEqual([]);
+        expect(eventsService.setMyTags).toHaveBeenCalledWith(
+            user,
+            'event-1',
+            dto,
+        );
+    });
+
+    it('delegates getMyTags', async () => {
+        eventsService.getMyTags.mockResolvedValue([]);
+
+        await expect(controller.getMyTags(user, 'event-1')).resolves.toEqual(
+            [],
+        );
+        expect(eventsService.getMyTags).toHaveBeenCalledWith(user, 'event-1');
     });
 
     it('delegates findParticipants with query tags', async () => {

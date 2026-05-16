@@ -1,8 +1,8 @@
 model Tag {
-  id    String @id @default(uuid())
-  name  String @unique
-  users  User[]
-  events Event[]
+  id           String             @id @default(uuid())
+  name         String             @unique
+  events       Event[]
+  participants EventParticipant[]
 
   @@map("tags")
 }

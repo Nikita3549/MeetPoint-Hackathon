@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString } from 'class-validator';
 
-export class SetUserTagsDto {
+export class SetParticipantTagsDto {
     @ApiProperty({
         type: [String],
         example: ['frontend', 'backend'],

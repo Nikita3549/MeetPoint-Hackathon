@@ -8,8 +8,6 @@ describe('UsersController', () => {
     let controller: UsersController;
     const usersService = {
         getMe: jest.fn(),
-        getTags: jest.fn(),
-        setTags: jest.fn(),
         getContacts: jest.fn(),
         setContacts: jest.fn(),
         uploadAvatar: jest.fn(),
@@ -53,27 +51,12 @@ describe('UsersController', () => {
         );
     });
 
-    it('delegates setTags', async () => {
-        const dto = { tags: ['Go'] };
-        usersService.setTags.mockResolvedValue([]);
-
-        await expect(controller.setTags(user, dto)).resolves.toEqual([]);
-        expect(usersService.setTags).toHaveBeenCalledWith(user, dto);
-    });
-
     it('delegates setContacts', async () => {
         const dto = { contacts: [] };
         usersService.setContacts.mockResolvedValue([]);
 
         await expect(controller.setContacts(user, dto)).resolves.toEqual([]);
         expect(usersService.setContacts).toHaveBeenCalledWith(user, dto);
-    });
-
-    it('delegates getTags', async () => {
-        usersService.getTags.mockResolvedValue([]);
-
-        await expect(controller.getTags(user)).resolves.toEqual([]);
-        expect(usersService.getTags).toHaveBeenCalledWith('user-1');
     });
 
     it('delegates getContacts', async () => {

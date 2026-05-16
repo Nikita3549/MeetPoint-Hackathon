@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole, UserStatus } from '@prisma/client';
-import { TagResponseDto } from '../../../common/dto/tag-response.dto';
 import { UserContactResponseDto } from './user-contact-response.dto';
 import { AvatarImageDto } from './avatar-image.dto';
 
@@ -25,9 +24,6 @@ export class UserResponseDto {
 
     @ApiProperty({ example: '2026-05-15T12:00:00.000Z', nullable: true })
     emailVerifiedAt: Date | null;
-
-    @ApiProperty({ type: [TagResponseDto] })
-    tags: TagResponseDto[];
 
     @ApiProperty({ type: [UserContactResponseDto] })
     contacts: UserContactResponseDto[];

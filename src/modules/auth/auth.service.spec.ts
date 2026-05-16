@@ -29,7 +29,6 @@ describe('AuthService', () => {
         role: UserRole.PARTICIPANT,
         status: UserStatus.ACTIVE,
         deletedAt: null,
-        tags: [{ id: 'tag-1', name: 'frontend' }],
         contacts: [
             {
                 id: 'contact-1',
@@ -65,7 +64,6 @@ describe('AuthService', () => {
         ).resolves.toEqual({
             accessToken: 'token',
             name: 'Jane Doe',
-            tags: [{ id: 'tag-1', name: 'frontend' }],
             contacts: [
                 {
                     id: 'contact-1',
@@ -139,7 +137,6 @@ describe('AuthService', () => {
         ).resolves.toEqual({
             accessToken: 'token',
             name: 'Jane Doe',
-            tags: [{ id: 'tag-1', name: 'frontend' }],
             contacts: [
                 {
                     id: 'contact-1',
@@ -196,12 +193,11 @@ describe('AuthService', () => {
         );
     });
 
-    it('returns empty contacts and tags for newly registered user', async () => {
+    it('returns empty contacts for newly registered user', async () => {
         prisma.user.findUnique.mockResolvedValue(null);
         (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
         prisma.user.create.mockResolvedValue({
             ...activeUser,
-            tags: [],
             contacts: [],
         });
         jwtService.signAsync.mockResolvedValue('token');
@@ -214,7 +210,6 @@ describe('AuthService', () => {
         ).resolves.toEqual({
             accessToken: 'token',
             name: 'Jane Doe',
-            tags: [],
             contacts: [],
         });
     });

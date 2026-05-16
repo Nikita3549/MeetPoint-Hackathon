@@ -19,6 +19,7 @@ describe('EventsService', () => {
         eventParticipant: {
             findMany: jest.fn(),
             findUnique: jest.fn(),
+            update: jest.fn(),
             upsert: jest.fn(),
             count: jest.fn(),
         },
@@ -276,6 +277,34 @@ describe('EventsService', () => {
         });
     });
 
+    describe('setMyTags', () => {
+        it('updates tags for current participant', async () => {
+            prisma.event.findUnique.mockResolvedValue({ id: 'event-1' });
+            prisma.eventParticipant.findUnique.mockResolvedValue({ id: 'p1' });
+            tagsService.resolveTagIds.mockResolvedValue(['tag-1']);
+            prisma.eventParticipant.update.mockResolvedValue({
+                tags: [{ id: 'tag-1', name: 'Go' }],
+            });
+
+            await expect(
+                service.setMyTags(participant, 'event-1', { tags: ['Go'] }),
+            ).resolves.toEqual([{ id: 'tag-1', name: 'Go' }]);
+        });
+    });
+
+    describe('getMyTags', () => {
+        it('returns tags for current participant', async () => {
+            prisma.event.findUnique.mockResolvedValue({ id: 'event-1' });
+            prisma.eventParticipant.findUnique.mockResolvedValue({
+                tags: [{ id: 'tag-1', name: 'Go' }],
+            });
+
+            await expect(
+                service.getMyTags(participant, 'event-1'),
+            ).resolves.toEqual([{ id: 'tag-1', name: 'Go' }]);
+        });
+    });
+
     describe('findParticipants', () => {
         it('returns participants filtered by tags', async () => {
             prisma.event.findUnique.mockResolvedValue({ id: 'event-1' });
@@ -286,10 +315,10 @@ describe('EventsService', () => {
             prisma.eventParticipant.findMany.mockResolvedValue([
                 {
                     createdAt: registeredAt,
+                    tags: [{ id: 'tag-1', name: 'Go' }],
                     user: {
                         id: 'user-2',
                         fullName: 'Other',
-                        tags: [{ id: 'tag-1', name: 'Go' }],
                     },
                 },
             ]);

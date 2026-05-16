@@ -65,7 +65,7 @@ describe('Events (e2e)', () => {
         await registerForEvent(tokenB, event.id);
 
         await request(app.getHttpServer())
-            .put('/v1/users/me/tags')
+            .put(`/v1/events/${event.id}/participants/me/tags`)
             .set('Authorization', `Bearer ${tokenB}`)
             .send({ tags: ['backend', 'ai'] })
             .expect(200);

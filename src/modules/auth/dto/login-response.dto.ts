@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TagResponseDto } from '../../../common/dto/tag-response.dto';
 import { UserContactResponseDto } from '../../users/dto/user-contact-response.dto';
 
 export class LoginResponseDto {
@@ -14,7 +13,4 @@ export class LoginResponseDto {
 
     @ApiProperty({ type: [UserContactResponseDto] })
     contacts: UserContactResponseDto[];
-
-    @ApiProperty({ type: [TagResponseDto] })
-    tags: TagResponseDto[];
 }

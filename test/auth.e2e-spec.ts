@@ -83,7 +83,6 @@ describe('Auth (e2e)', () => {
                 accessToken: expect.any(String),
                 name: 'new-user',
                 contacts: [],
-                tags: [],
             }),
         );
     });

@@ -13,10 +13,6 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 const userAuthInclude = {
-    tags: {
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' as const },
-    },
     contacts: {
         orderBy: [{ type: 'asc' as const }, { createdAt: 'asc' as const }],
     },
@@ -104,7 +100,6 @@ export class AuthService {
             contacts: user.contacts.map((contact) =>
                 this.toContactResponse(contact),
             ),
-            tags: user.tags,
         };
     }
 
