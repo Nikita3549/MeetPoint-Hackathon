@@ -22,7 +22,4 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
   },
-  "exclude": [
-    "prisma"
-  ]
 }
