@@ -36,7 +36,9 @@ const eventInclude = {
     },
 } satisfies Prisma.EventInclude;
 
-type EventWithRelations = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
+type EventWithRelations = Prisma.EventGetPayload<{
+    include: typeof eventInclude;
+}>;
 
 @Injectable()
 export class EventsService {
@@ -393,5 +395,4 @@ export class EventsService {
 
         throw new InternalServerErrorException('Failed to generate event link');
     }
-
 }

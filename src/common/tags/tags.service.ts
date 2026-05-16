@@ -23,7 +23,9 @@ export class TagsService {
     async resolveTagIds(tagNames: string[]): Promise<string[]> {
         const uniqueNames = [
             ...new Set(
-                tagNames.map((name) => name.trim()).filter((name) => name.length > 0),
+                tagNames
+                    .map((name) => name.trim())
+                    .filter((name) => name.length > 0),
             ),
         ];
 

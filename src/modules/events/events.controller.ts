@@ -70,9 +70,7 @@ export class EventsController {
     @ApiOperation({ summary: 'Get event by id' })
     @ApiOkResponse({ type: EventResponseDto })
     @ApiNotFoundResponse({ description: 'Event not found' })
-    findOne(
-        @Param('id', ParseUUIDPipe) id: string,
-    ): Promise<EventResponseDto> {
+    findOne(@Param('id', ParseUUIDPipe) id: string): Promise<EventResponseDto> {
         return this.eventsService.findOne(id);
     }
 

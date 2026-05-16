@@ -1,5 +1,22 @@
 stages:
+  - lint
   - deploy
+
+lint:
+  stage: lint
+  image: node:22-alpine
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  before_script:
+    - npm ci
+  script:
+    - npm run lint
+    - npm run format:check
+  only:
+    - merge_requests
+    - master
 
 deploy:
   stage: deploy
@@ -10,6 +27,6 @@ deploy:
     - printf "%b\n" "$CI_BACKEND_SSH_KEY" > ~/.ssh/id.pem
     - chmod 600 ~/.ssh/id.pem
   script:
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id.pem ubuntu@130.193.43.223 "cd backend-prod && git pull && docker compose --profile api up --build -d"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id.pem ubuntu@130.193.43.223 "cd backend-prod && git pull && docker compose --profile api build && docker compose --profile api up -d"
   only:
     - master

@@ -27,4 +27,4 @@ async function bootstrap() {
     console.log(`App is running on port ${port}`);
     console.log(`Swagger: http://localhost:${port}/${SWAGGER_PATH}`);
 }
-bootstrap();
+void bootstrap();

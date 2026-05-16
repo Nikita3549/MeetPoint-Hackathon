@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { ContactType, UserContact } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { UserContact } from '@prisma/client';
 import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { TagsService } from '../../common/tags/tags.service';
 import { PrismaService } from '../../prisma/prisma.service';
