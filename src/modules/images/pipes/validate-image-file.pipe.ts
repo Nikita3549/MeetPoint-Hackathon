@@ -1,8 +1,4 @@
-import {
-    BadRequestException,
-    Injectable,
-    PipeTransform,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { UploadImageDto } from '../dto/upload-image.dto';

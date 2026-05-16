@@ -10,7 +10,9 @@ export class ImageResponseDto {
     })
     url: string;
 
-    @ApiProperty({ example: 'prod_images/a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
+    @ApiProperty({
+        example: 'prod_images/a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    })
     cloudinaryPublicId: string;
 
     @ApiProperty({ example: 'photo.jpg', nullable: true })
