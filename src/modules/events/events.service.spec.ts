@@ -229,6 +229,7 @@ describe('EventsService', () => {
                     date: '2025-06-01',
                     description: 'Desc',
                     tags: ['Go'],
+                    isPrivate: false,
                 }),
             ).resolves.toEqual({
                 ...eventRecord,

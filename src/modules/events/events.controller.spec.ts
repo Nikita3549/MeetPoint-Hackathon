@@ -57,6 +57,7 @@ describe('EventsController', () => {
             date: '2025-06-01',
             description: 'Desc',
             tags: [],
+            isPrivate: false,
         };
         eventsService.create.mockResolvedValue({ id: 'event-1' });
 

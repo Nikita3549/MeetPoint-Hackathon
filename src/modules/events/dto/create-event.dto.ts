@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
     ArrayMinSize,
     IsArray,
+    IsBoolean,
     IsDateString,
     IsString,
     MinLength,
@@ -31,4 +32,8 @@ export class CreateEventDto {
     @IsString({ each: true })
     @MinLength(1, { each: true })
     tags: string[];
+
+    @ApiProperty({ type: Boolean, example: false })
+    @IsBoolean()
+    isPrivate: boolean;
 }

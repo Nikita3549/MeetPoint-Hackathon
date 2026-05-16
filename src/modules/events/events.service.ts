@@ -80,6 +80,9 @@ export class EventsService {
         const events = await this.prisma.event.findMany({
             include: eventInclude,
             orderBy: { date: 'asc' },
+            where: {
+                isPrivate: false,
+            },
         });
 
         return events.map((event) => this.toResponse(event));

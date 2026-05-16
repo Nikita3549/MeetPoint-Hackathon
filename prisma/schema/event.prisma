@@ -1,18 +1,19 @@
 model Event {
-  id          String   @id @default(uuid())
-  slug        String   @unique
-  title       String
-  date        DateTime
-  description  String
-  coverImageId String?  @unique @map("cover_image_id")
-  coverImage   Image?   @relation("EventCover", fields: [coverImageId], references: [id], onDelete: SetNull)
-  organizerId  String   @map("organizer_id")
-  organizer   User     @relation(fields: [organizerId], references: [id])
-  tags         Tag[]
+  id            String             @id @default(uuid())
+  slug          String             @unique
+  title         String
+  date          DateTime
+  description   String
+  coverImageId  String?            @unique @map("cover_image_id")
+  coverImage    Image?             @relation("EventCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  organizerId   String             @map("organizer_id")
+  organizer     User               @relation(fields: [organizerId], references: [id])
+  isPrivate     Boolean            @default(false)
+  tags          Tag[]
   participants  EventParticipant[]
   matchRequests MatchRequest[]
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
 
   @@index([organizerId])
   @@index([date])
