@@ -16,11 +16,10 @@ lint:
 
 test:
   stage: test
-  image: node:22-slim
+  image: node:22-bookworm
   variables:
     DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates
     - npm ci --ignore-scripts
     - npx prisma generate --schema prisma/schema
   script:
