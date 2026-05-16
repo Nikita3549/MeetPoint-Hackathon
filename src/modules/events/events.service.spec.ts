@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MatchRequestStatus, UserRole } from '@prisma/client';
 import { TagsService } from '../../common/tags/tags.service';
+import { ImagesService } from '../images/images.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventsService } from './events.service';
 
@@ -31,6 +32,10 @@ describe('EventsService', () => {
     const tagsService = {
         resolveTagIds: jest.fn(),
         parseTagNames: jest.fn(),
+    };
+    const imagesService = {
+        uploadImage: jest.fn(),
+        deleteImage: jest.fn(),
     };
 
     const organizer = {
@@ -65,6 +70,7 @@ describe('EventsService', () => {
                 { provide: PrismaService, useValue: prisma },
                 { provide: ConfigService, useValue: configService },
                 { provide: TagsService, useValue: tagsService },
+                { provide: ImagesService, useValue: imagesService },
             ],
         }).compile();
 
@@ -78,7 +84,11 @@ describe('EventsService', () => {
             prisma.event.findMany.mockResolvedValue([eventRecord]);
 
             await expect(service.findAll()).resolves.toEqual([
-                { ...eventRecord, joinUrl: '/e/abc-defg-hij' },
+                {
+                    ...eventRecord,
+                    imageUrl: null,
+                    joinUrl: '/e/abc-defg-hij',
+                },
             ]);
         });
     });
@@ -89,6 +99,7 @@ describe('EventsService', () => {
 
             await expect(service.findOne('event-1')).resolves.toEqual({
                 ...eventRecord,
+                imageUrl: null,
                 joinUrl: '/e/abc-defg-hij',
             });
         });
@@ -108,6 +119,7 @@ describe('EventsService', () => {
 
             await expect(service.findBySlug('abc-defg-hij')).resolves.toEqual({
                 ...eventRecord,
+                imageUrl: null,
                 joinUrl: '/e/abc-defg-hij',
             });
         });
@@ -128,6 +140,7 @@ describe('EventsService', () => {
             ).resolves.toEqual([
                 {
                     ...eventRecord,
+                    imageUrl: null,
                     joinUrl: '/e/abc-defg-hij',
                     registeredAt,
                 },
@@ -202,6 +215,7 @@ describe('EventsService', () => {
                 }),
             ).resolves.toEqual({
                 ...eventRecord,
+                imageUrl: null,
                 joinUrl: '/e/abc-defg-hij',
             });
         });
@@ -222,6 +236,7 @@ describe('EventsService', () => {
                 }),
             ).resolves.toEqual({
                 ...eventRecord,
+                imageUrl: null,
                 joinUrl: '/e/abc-defg-hij',
             });
         });
@@ -324,6 +339,7 @@ describe('EventsService', () => {
             await expect(service.findAll()).resolves.toEqual([
                 {
                     ...eventRecord,
+                    imageUrl: null,
                     joinUrl: 'https://app.example.com/e/abc-defg-hij',
                 },
             ]);

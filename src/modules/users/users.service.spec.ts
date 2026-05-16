@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactType, UserRole, UserStatus } from '@prisma/client';
 import { TagsService } from '../../common/tags/tags.service';
+import { ImagesService } from '../images/images.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from './users.service';
 
@@ -23,6 +24,10 @@ describe('UsersService', () => {
     const tagsService = {
         resolveTagIds: jest.fn(),
     };
+    const imagesService = {
+        uploadImage: jest.fn(),
+        deleteImage: jest.fn(),
+    };
 
     const authUser = {
         id: 'user-1',
@@ -36,6 +41,7 @@ describe('UsersService', () => {
                 UsersService,
                 { provide: PrismaService, useValue: prisma },
                 { provide: TagsService, useValue: tagsService },
+                { provide: ImagesService, useValue: imagesService },
             ],
         }).compile();
 
@@ -85,6 +91,7 @@ describe('UsersService', () => {
                         value: '@user',
                     },
                 ],
+                avatarImage: null,
                 createdAt,
                 updatedAt,
             });
