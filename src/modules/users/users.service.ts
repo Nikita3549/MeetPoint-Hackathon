@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserContact } from '@prisma/client';
 import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { TagsService } from '../../common/tags/tags.service';
@@ -8,6 +8,7 @@ import { SetUserContactsDto } from './dto/set-user-contacts.dto';
 import { SetUserTagsDto } from './dto/set-user-tags.dto';
 import { UserContactItemDto } from './dto/user-contact-item.dto';
 import { UserContactResponseDto } from './dto/user-contact-response.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +16,48 @@ export class UsersService {
         private readonly prisma: PrismaService,
         private readonly tagsService: TagsService,
     ) {}
+
+    async getMe(userId: string): Promise<UserResponseDto> {
+        const user = await this.prisma.user.findFirst({
+            where: { id: userId, deletedAt: null },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                status: true,
+                emailVerified: true,
+                emailVerifiedAt: true,
+                createdAt: true,
+                updatedAt: true,
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+                contacts: {
+                    orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
+                },
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return {
+            id: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+            status: user.status,
+            emailVerified: user.emailVerified,
+            emailVerifiedAt: user.emailVerifiedAt,
+            tags: user.tags,
+            contacts: user.contacts.map((contact) => this.toResponse(contact)),
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        };
+    }
 
     async getTags(userId: string): Promise<TagResponseDto[]> {
         const user = await this.prisma.user.findUnique({

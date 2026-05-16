@@ -15,6 +15,7 @@ import { EventParticipantResponseDto } from './dto/event-participant-response.dt
 import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
 import { EventResponseDto } from './dto/event-response.dto';
 import { EventStatsResponseDto } from './dto/event-stats-response.dto';
+import { UserEventResponseDto } from './dto/user-event-response.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { generateEventSlug } from './utils/generate-event-slug';
 
@@ -47,6 +48,25 @@ export class EventsService {
         private readonly configService: ConfigService,
         private readonly tagsService: TagsService,
     ) {}
+
+    async findParticipatingEvents(
+        userId: string,
+    ): Promise<UserEventResponseDto[]> {
+        const participations = await this.prisma.eventParticipant.findMany({
+            where: { userId },
+            include: {
+                event: {
+                    include: eventInclude,
+                },
+            },
+            orderBy: { event: { date: 'asc' } },
+        });
+
+        return participations.map((participation) => ({
+            ...this.toResponse(participation.event),
+            registeredAt: participation.createdAt,
+        }));
+    }
 
     async findAll(): Promise<EventResponseDto[]> {
         const events = await this.prisma.event.findMany({
