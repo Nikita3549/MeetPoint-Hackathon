@@ -1,0 +1,24 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/jest-e2e.setup.ts"],
+  "globalSetup": "<rootDir>/global-setup.ts",
+  "globalTeardown": "<rootDir>/global-teardown.ts",
+  "collectCoverageFrom": [
+    "../src/**/*.(t|j)s",
+    "!../src/**/*.spec.ts",
+    "!../src/**/*.module.ts",
+    "!../src/**/main.ts",
+    "!../src/**/dto/**",
+    "!../src/**/swagger/**",
+    "!../src/**/decorators/**",
+    "!../src/**/interfaces/**"
+  ],
+  "coverageDirectory": "../coverage/e2e",
+  "coverageReporters": ["text", "text-summary", "lcov", "cobertura", "html"]
+}

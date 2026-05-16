@@ -14,11 +14,9 @@ lint:
   only:
     - master
 
-test:
+unit-tests:
   stage: test
   image: node:22-bookworm
-  variables:
-    DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
   before_script:
     - npm ci --ignore-scripts
     - npx prisma generate --schema prisma/schema
@@ -33,6 +31,36 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage/cobertura-coverage.xml
+  only:
+    - master
+
+e2e-tests:
+  stage: test
+  image: node:22-bookworm
+  services:
+    - name: postgres:17-alpine
+      alias: postgres
+  variables:
+    POSTGRES_USER: ci
+    POSTGRES_PASSWORD: ci
+    POSTGRES_DB: ci
+    DATABASE_URL: postgresql://ci:ci@postgres:5432/ci?schema=public
+    JWT_SECRET: ci-jwt-secret
+  before_script:
+    - npm ci --ignore-scripts
+    - npx prisma generate --schema prisma/schema
+    - npx prisma migrate deploy --schema prisma/schema
+  script:
+    - npm run test:e2e:cov
+  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s+([\d.]+)/'
+  artifacts:
+    when: always
+    paths:
+      - coverage/e2e/
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/e2e/cobertura-coverage.xml
   only:
     - master
 
