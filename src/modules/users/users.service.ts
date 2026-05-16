@@ -4,7 +4,9 @@ import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { TagsService } from '../../common/tags/tags.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
+import { ImagesService } from '../images/images.service';
 import { SetUserContactsDto } from './dto/set-user-contacts.dto';
+import { UserAvatarResponseDto } from './dto/user-avatar-response.dto';
 import { SetUserTagsDto } from './dto/set-user-tags.dto';
 import { UserContactItemDto } from './dto/user-contact-item.dto';
 import { UserContactResponseDto } from './dto/user-contact-response.dto';
@@ -12,53 +14,6 @@ import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly tagsService: TagsService,
-    ) {}
-
-    async getMe(userId: string): Promise<UserResponseDto> {
-        const user = await this.prisma.user.findFirst({
-            where: { id: userId, deletedAt: null },
-            select: {
-                id: true,
-                email: true,
-                fullName: true,
-                role: true,
-                status: true,
-                emailVerified: true,
-                emailVerifiedAt: true,
-                createdAt: true,
-                updatedAt: true,
-                tags: {
-                    select: { id: true, name: true },
-                    orderBy: { name: 'asc' },
-                },
-                contacts: {
-                    orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
-                },
-            },
-        });
-
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-
-        return {
-            id: user.id,
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role,
-            status: user.status,
-            emailVerified: user.emailVerified,
-            emailVerifiedAt: user.emailVerifiedAt,
-            tags: user.tags,
-            contacts: user.contacts.map((contact) => this.toResponse(contact)),
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-        };
-    }
-
     async getTags(userId: string): Promise<TagResponseDto[]> {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -96,6 +51,60 @@ export class UsersService {
 
         return updated.tags;
     }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly imagesService: ImagesService,
+        private readonly tagsService: TagsService,
+    ) {}
+
+    async getMe(userId: string): Promise<UserResponseDto> {
+        const user = await this.prisma.user.findFirst({
+            where: { id: userId, deletedAt: null },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                status: true,
+                emailVerified: true,
+                emailVerifiedAt: true,
+                createdAt: true,
+                updatedAt: true,
+                avatarImage: {
+                    select: {
+                        id: true,
+                        url: true,
+                    },
+                },
+                tags: {
+                    select: { id: true, name: true },
+                    orderBy: { name: 'asc' },
+                },
+                contacts: {
+                    orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
+                },
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return {
+            id: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+            status: user.status,
+            emailVerified: user.emailVerified,
+            emailVerifiedAt: user.emailVerifiedAt,
+            tags: user.tags,
+            contacts: user.contacts.map((contact) => this.toResponse(contact)),
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            avatarImage: user.avatarImage || null,
+        };
+    }
 
     async getContacts(userId: string): Promise<UserContactResponseDto[]> {
         const contacts = await this.prisma.userContact.findMany({
@@ -104,6 +113,29 @@ export class UsersService {
         });
 
         return contacts.map((contact) => this.toResponse(contact));
+    }
+
+    async uploadAvatar(
+        user: AuthenticatedUser,
+        file: Express.Multer.File,
+    ): Promise<UserAvatarResponseDto> {
+        const currentUser = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            select: { avatarImageId: true },
+        });
+
+        const image = await this.imagesService.uploadImage(user.id, file);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { avatarImageId: image.id },
+        });
+
+        if (currentUser?.avatarImageId) {
+            await this.imagesService.deleteImage(currentUser.avatarImageId);
+        }
+
+        return { avatarUrl: image.url };
     }
 
     async setContacts(

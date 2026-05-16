@@ -3,8 +3,10 @@ model Event {
   slug        String   @unique
   title       String
   date        DateTime
-  description String
-  organizerId String   @map("organizer_id")
+  description  String
+  coverImageId String?  @unique @map("cover_image_id")
+  coverImage   Image?   @relation("EventCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  organizerId  String   @map("organizer_id")
   organizer   User     @relation(fields: [organizerId], references: [id])
   tags         Tag[]
   participants  EventParticipant[]

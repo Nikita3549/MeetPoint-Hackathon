@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ImagesModule } from '../images/images.module';
 import { TagsModule } from '../../common/tags/tags.module';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 
 @Module({
-    imports: [TagsModule],
+    imports: [ImagesModule, TagsModule],
     controllers: [EventsController],
     providers: [EventsService],
     exports: [EventsService],

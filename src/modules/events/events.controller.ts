@@ -6,10 +6,15 @@ import {
     ParseUUIDPipe,
     Post,
     Put,
+    UploadedFile,
+    UseInterceptors,
     Query,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
     ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
     ApiCreatedResponse,
     ApiForbiddenResponse,
     ApiNotFoundResponse,
@@ -29,6 +34,8 @@ import { EventResponseDto } from './dto/event-response.dto';
 import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { ListEventParticipantsQueryDto } from './dto/list-event-participants-query.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { MAX_IMAGE_SIZE_BYTES } from '../images/images.constants';
+import { ValidateImageFilePipe } from '../images/pipes/validate-image-file.pipe';
 import { EventSlugPipe } from './pipes/event-slug.pipe';
 import { EventsService } from './events.service';
 
@@ -139,5 +146,37 @@ export class EventsController {
         @Body() dto: UpdateEventDto,
     ): Promise<EventResponseDto> {
         return this.eventsService.update(user, id, dto);
+    }
+
+    @Post(':id/image')
+    @Roles(UserRole.ORGANIZER)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
+        }),
+    )
+    @ApiOperation({ summary: 'Upload event cover image' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['file'],
+            properties: {
+                file: { type: 'string', format: 'binary' },
+            },
+            example: { file: 'cover.jpg' },
+        },
+    })
+    @ApiOkResponse({ type: EventResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({
+        description: 'Organizer role required or not event owner',
+    })
+    uploadCoverImage(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id', ParseUUIDPipe) id: string,
+        @UploadedFile(ValidateImageFilePipe) file: Express.Multer.File,
+    ): Promise<EventResponseDto> {
+        return this.eventsService.uploadCoverImage(user, id, file);
     }
 }

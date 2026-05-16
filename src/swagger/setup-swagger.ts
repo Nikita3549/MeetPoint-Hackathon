@@ -1,23 +1,28 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { JWT_AUTH_SCHEME, SWAGGER_PATH } from './swagger.constants';
+import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { SWAGGER_PATH } from './swagger.constants';
+
+function loadOpenApiDocument(): OpenAPIObject {
+    const candidates = [
+        join(__dirname, 'openapi.json'),
+        join(__dirname, '..', '..', 'swagger', 'openapi.json'),
+        join(process.cwd(), 'src', 'swagger', 'openapi.json'),
+        join(process.cwd(), 'dist', 'swagger', 'openapi.json'),
+    ];
+
+    for (const path of candidates) {
+        if (existsSync(path)) {
+            return JSON.parse(readFileSync(path, 'utf8')) as OpenAPIObject;
+        }
+    }
+
+    throw new Error('openapi.json not found');
+}
 
 export function setupSwagger(app: INestApplication): void {
-    const config = new DocumentBuilder()
-        .setTitle('Hackaton Prod API')
-        .setDescription('Backend API')
-        .setVersion('1.0')
-        .addBearerAuth(
-            {
-                type: 'http',
-                scheme: 'bearer',
-                bearerFormat: 'JWT',
-            },
-            JWT_AUTH_SCHEME,
-        )
-        .build();
-
-    const document = SwaggerModule.createDocument(app, config);
+    const document = loadOpenApiDocument();
 
     SwaggerModule.setup(SWAGGER_PATH, app, document, {
         swaggerOptions: {

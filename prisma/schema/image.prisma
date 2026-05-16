@@ -1,0 +1,16 @@
+model Image {
+  id                 String   @id @default(uuid())
+  url                String
+  cloudinaryPublicId String   @unique @map("cloudinary_public_id")
+  originalFileName   String?  @map("original_file_name")
+  mimeType           String?  @map("mime_type")
+  sizeBytes          Int?     @map("size_bytes")
+  uploadedById       String?  @map("uploaded_by_id")
+  uploadedBy         User?    @relation("UploadedImages", fields: [uploadedById], references: [id], onDelete: SetNull)
+  userAvatar         User?    @relation("UserAvatar")
+  eventCover         Event?   @relation("EventCover")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([uploadedById])
+  @@map("images")
+}

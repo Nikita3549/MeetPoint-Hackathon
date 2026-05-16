@@ -10,6 +10,7 @@ import { TagResponseDto } from '../../common/dto/tag-response.dto';
 import { TagsService } from '../../common/tags/tags.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
+import { ImagesService } from '../images/images.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventParticipantResponseDto } from './dto/event-participant-response.dto';
 import { EventRegistrationResponseDto } from './dto/event-registration-response.dto';
@@ -24,6 +25,11 @@ const eventInclude = {
         select: {
             id: true,
             fullName: true,
+        },
+    },
+    coverImage: {
+        select: {
+            url: true,
         },
     },
     tags: {
@@ -46,6 +52,7 @@ export class EventsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
+        private readonly imagesService: ImagesService,
         private readonly tagsService: TagsService,
     ) {}
 
@@ -171,6 +178,39 @@ export class EventsService {
         });
 
         return this.toResponse(event);
+    }
+
+    async uploadCoverImage(
+        user: AuthenticatedUser,
+        eventId: string,
+        file: Express.Multer.File,
+    ): Promise<EventResponseDto> {
+        const event = await this.prisma.event.findUnique({
+            where: { id: eventId },
+            select: { organizerId: true, coverImageId: true },
+        });
+
+        if (!event) {
+            throw new NotFoundException('Event not found');
+        }
+
+        if (event.organizerId !== user.id) {
+            throw new ForbiddenException();
+        }
+
+        const image = await this.imagesService.uploadImage(user.id, file);
+
+        const updated = await this.prisma.event.update({
+            where: { id: eventId },
+            data: { coverImageId: image.id },
+            include: eventInclude,
+        });
+
+        if (event.coverImageId) {
+            await this.imagesService.deleteImage(event.coverImageId);
+        }
+
+        return this.toResponse(updated);
     }
 
     async update(
@@ -352,8 +392,11 @@ export class EventsService {
     }
 
     private toResponse(event: EventWithRelations): EventResponseDto {
+        const { coverImage, ...rest } = event;
+
         return {
-            ...event,
+            ...rest,
+            imageUrl: coverImage?.url ?? null,
             joinUrl: this.buildJoinUrl(event.slug),
         };
     }
@@ -414,5 +457,31 @@ export class EventsService {
         }
 
         throw new InternalServerErrorException('Failed to generate event link');
+    }
+
+    private async resolveTagIds(tagNames: string[]): Promise<string[]> {
+        const uniqueNames = [
+            ...new Set(
+                tagNames
+                    .map((name) => name.trim())
+                    .filter((name) => name.length > 0),
+            ),
+        ];
+
+        if (uniqueNames.length === 0) {
+            return [];
+        }
+
+        const tags = await Promise.all(
+            uniqueNames.map((name) =>
+                this.prisma.tag.upsert({
+                    where: { name },
+                    create: { name },
+                    update: {},
+                }),
+            ),
+        );
+
+        return tags.map((tag) => tag.id);
     }
 }

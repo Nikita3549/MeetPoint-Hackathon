@@ -1,6 +1,7 @@
 enum UserRole {
   USER
   ORGANIZER
+  PARTICIPANT
 }
 
 enum UserStatus {
@@ -14,6 +15,8 @@ model User {
   email          String     @unique
   hashedPassword String     @map("hashed_password")
   fullName       String     @map("full_name")
+  avatarImageId  String?    @unique @map("avatar_image_id")
+  avatarImage    Image?     @relation("UserAvatar", fields: [avatarImageId], references: [id], onDelete: SetNull)
   role           UserRole   @default(USER)
   status         UserStatus @default(ACTIVE)
 
@@ -27,12 +30,13 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tags                 Tag[]
-  contacts             UserContact[]
-  organizedEvents      Event[]
-  eventParticipations  EventParticipant[]
-  sentMatchRequests    MatchRequest[] @relation("SentMatchRequests")
-  receivedMatchRequests MatchRequest[] @relation("ReceivedMatchRequests")
+  tags                  Tag[]
+  contacts              UserContact[]
+  organizedEvents       Event[]
+  eventParticipations   EventParticipant[]
+  uploadedImages        Image[]            @relation("UploadedImages")
+  sentMatchRequests     MatchRequest[]     @relation("SentMatchRequests")
+  receivedMatchRequests MatchRequest[]     @relation("ReceivedMatchRequests")
 
   @@index([status])
   @@index([role])
