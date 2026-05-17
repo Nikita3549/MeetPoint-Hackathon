@@ -33,13 +33,10 @@ unit-tests:
     - npx prisma generate --schema prisma/schema
   script:
     - npm run test:cov
-    - node scripts/generate-test-report.mjs unit
   artifacts:
     when: always
     paths:
       - coverage/
-      - coverage/test-report.html
-      - coverage/test-report.md
     reports:
       coverage_report:
         coverage_format: cobertura
@@ -70,13 +67,10 @@ e2e-tests:
     - npx prisma migrate deploy --schema prisma/schema
   script:
     - npm run test:e2e:cov
-    - node scripts/generate-test-report.mjs e2e
   artifacts:
     when: always
     paths:
       - coverage/e2e/
-      - coverage/e2e/test-report.html
-      - coverage/e2e/test-report.md
     reports:
       coverage_report:
         coverage_format: cobertura
