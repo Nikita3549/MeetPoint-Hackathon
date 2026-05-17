@@ -1,7 +1,7 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from './auth.service';
@@ -26,7 +26,6 @@ describe('AuthService', () => {
         email: 'user@example.com',
         hashedPassword: 'hash',
         fullName: 'Jane Doe',
-        role: UserRole.PARTICIPANT,
         status: UserStatus.ACTIVE,
         deletedAt: null,
         contacts: [
@@ -80,7 +79,6 @@ describe('AuthService', () => {
         expect(jwtService.signAsync).toHaveBeenCalledWith({
             sub: 'user-1',
             email: 'user@example.com',
-            role: UserRole.PARTICIPANT,
         });
     });
 

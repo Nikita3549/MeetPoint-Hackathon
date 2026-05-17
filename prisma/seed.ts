@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -15,7 +15,6 @@ async function main() {
             email: `user${n}@example.com`,
             hashedPassword,
             fullName: `User ${n}`,
-            role: UserRole.USER,
             emailVerified: true,
             emailVerifiedAt: new Date(),
         };
@@ -27,7 +26,6 @@ async function main() {
             email: `organizer${n}@example.com`,
             hashedPassword,
             fullName: `Organizer ${n}`,
-            role: UserRole.ORGANIZER,
             emailVerified: true,
             emailVerifiedAt: new Date(),
         };
@@ -39,7 +37,6 @@ async function main() {
             update: {
                 hashedPassword: user.hashedPassword,
                 fullName: user.fullName,
-                role: user.role,
                 emailVerified: user.emailVerified,
                 emailVerifiedAt: user.emailVerifiedAt,
             },
@@ -47,7 +44,7 @@ async function main() {
         });
     }
 
-    console.log('Seeded 20 users (18 USER, 2 ORGANIZER)');
+    console.log('Seeded 20 users (18 regular, 2 organizers)');
     console.log(`Password for all: ${DEFAULT_PASSWORD}`);
 }
 

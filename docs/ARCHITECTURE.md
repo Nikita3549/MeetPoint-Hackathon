@@ -59,7 +59,7 @@ flowchart TB
 | **service** | Бизнес-логика и работа с БД; controller «тонкий» |
 | **dto/** | Форма запроса/ответа + валидация полей |
 | **guards** | Проверки **до** handler: есть ли токен, подходит ли роль |
-| **decorators** | Метки на методах (`@Public()`, `@Roles()`, `@CurrentUser()`) — guards их читают |
+| **decorators** | Метки на методах (`@Public()`, `@CurrentUser()`) — guards их читают |
 
 **Запрос в одну строку:** HTTP → guard → controller → service → БД → ответ.
 
@@ -77,7 +77,7 @@ flowchart TB
 | Задача | Сначала открой | Потом |
 |--------|----------------|-------|
 | Добавить эндпоинт | `*.controller.ts` модуля | `*.service.ts` + `dto/` |
-| Поменять правило доступа | `*.service.ts` (`ensureParticipant`, `ForbiddenException`) | или `auth/guards/`, `@Roles()` |
+| Поменять правило доступа | `*.service.ts` (`ensureParticipant`, `ForbiddenException`, проверка `organizerId`) | или `auth/guards/` |
 | Поменять поля API | `dto/` | Swagger подтянется из `@ApiProperty` |
 | Поменять таблицу БД | `prisma/schema/*.prisma` | `npx prisma migrate dev --name ...` |
 | Публичный роут без JWT | `auth/decorators/public.decorator.ts` | `@Public()` на метод контроллера |

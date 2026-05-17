@@ -4,7 +4,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ContactType, UserRole, UserStatus } from '@prisma/client';
+import { ContactType, UserStatus } from '@prisma/client';
 import { ImagesService } from '../images/images.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from './users.service';
@@ -33,7 +33,6 @@ describe('UsersService', () => {
     const authUser = {
         id: 'user-1',
         email: 'user@example.com',
-        role: UserRole.PARTICIPANT,
     };
 
     beforeEach(async () => {
@@ -57,7 +56,6 @@ describe('UsersService', () => {
                 id: 'user-1',
                 email: 'user@example.com',
                 fullName: 'User',
-                role: UserRole.PARTICIPANT,
                 status: UserStatus.ACTIVE,
                 emailVerified: true,
                 emailVerifiedAt: createdAt,
@@ -78,7 +76,6 @@ describe('UsersService', () => {
                 id: 'user-1',
                 email: 'user@example.com',
                 fullName: 'User',
-                role: UserRole.PARTICIPANT,
                 status: UserStatus.ACTIVE,
                 emailVerified: true,
                 emailVerifiedAt: createdAt,
@@ -109,7 +106,6 @@ describe('UsersService', () => {
             id: 'user-1',
             email: 'user@example.com',
             fullName: 'User',
-            role: UserRole.PARTICIPANT,
             status: UserStatus.ACTIVE,
             emailVerified: true,
             emailVerifiedAt: null,
@@ -143,7 +139,6 @@ describe('UsersService', () => {
                 service.updateMe(authUser, {
                     fullName: 'Name',
                     contacts: [{ type: ContactType.EMAIL, value: 'x@y.z' }],
-                    role: UserRole.ORGANIZER,
                     tags: ['tag-1'],
                 }),
             ).resolves.toEqual({
@@ -162,7 +157,7 @@ describe('UsersService', () => {
             prisma.user.findFirst.mockResolvedValue(profile);
 
             await expect(
-                service.updateMe(authUser, { role: UserRole.ORGANIZER }),
+                service.updateMe(authUser, { unknownField: 'x' }),
             ).resolves.toEqual({
                 ...profile,
                 contacts: [],

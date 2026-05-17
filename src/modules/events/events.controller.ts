@@ -23,10 +23,8 @@ import {
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { JWT_AUTH_SCHEME } from '../../swagger/swagger.constants';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventParticipantResponseDto } from './dto/event-participant-response.dto';
@@ -96,10 +94,8 @@ export class EventsController {
     }
 
     @Post()
-    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Create event' })
     @ApiCreatedResponse({ type: EventResponseDto })
-    @ApiForbiddenResponse({ description: 'Organizer role required' })
     create(
         @CurrentUser() user: AuthenticatedUser,
         @Body() dto: CreateEventDto,
@@ -147,13 +143,10 @@ export class EventsController {
     }
 
     @Get(':id/stats')
-    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Get event statistics for organizer' })
     @ApiOkResponse({ type: EventStatsResponseDto })
     @ApiNotFoundResponse({ description: 'Event not found' })
-    @ApiForbiddenResponse({
-        description: 'Organizer role required or not event owner',
-    })
+    @ApiForbiddenResponse({ description: 'Not the event owner' })
     getStats(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id', ParseUUIDPipe) id: string,
@@ -162,13 +155,10 @@ export class EventsController {
     }
 
     @Put(':id')
-    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Update event' })
     @ApiOkResponse({ type: EventResponseDto })
     @ApiNotFoundResponse({ description: 'Event not found' })
-    @ApiForbiddenResponse({
-        description: 'Organizer role required or not event owner',
-    })
+    @ApiForbiddenResponse({ description: 'Not the event owner' })
     update(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id', ParseUUIDPipe) id: string,
@@ -178,7 +168,6 @@ export class EventsController {
     }
 
     @Post(':id/image')
-    @Roles(UserRole.ORGANIZER)
     @UseInterceptors(
         FileInterceptor('file', {
             limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
@@ -198,9 +187,7 @@ export class EventsController {
     })
     @ApiOkResponse({ type: EventResponseDto })
     @ApiNotFoundResponse({ description: 'Event not found' })
-    @ApiForbiddenResponse({
-        description: 'Organizer role required or not event owner',
-    })
+    @ApiForbiddenResponse({ description: 'Not the event owner' })
     uploadCoverImage(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id', ParseUUIDPipe) id: string,

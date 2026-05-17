@@ -147,7 +147,6 @@
       "post": {
         "tags": ["events"],
         "summary": "Create event",
-        "description": "Requires ORGANIZER role",
         "operationId": "createEvent",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
@@ -183,9 +182,6 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/ForbiddenOrganizer"
           }
         }
       }
@@ -312,7 +308,7 @@
       "put": {
         "tags": ["events"],
         "summary": "Update event",
-        "description": "Requires ORGANIZER role and event ownership",
+        "description": "Requires event ownership",
         "operationId": "updateEvent",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -456,7 +452,7 @@
       "get": {
         "tags": ["events"],
         "summary": "Get event statistics for organizer",
-        "description": "Requires ORGANIZER role and event ownership",
+        "description": "Requires event ownership",
         "operationId": "getEventStats",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -497,7 +493,7 @@
       "post": {
         "tags": ["events"],
         "summary": "Upload event cover image",
-        "description": "Requires ORGANIZER role and event ownership",
+        "description": "Requires event ownership",
         "operationId": "uploadEventCoverImage",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -1279,14 +1275,6 @@
           }
         }
       },
-      "ForbiddenOrganizer": {
-        "description": "403 — ORGANIZER role required",
-        "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/HttpError403" }
-          }
-        }
-      },
       "ForbiddenEventOwner": {
         "description": "403 — not the event owner",
         "content": {
@@ -1538,10 +1526,6 @@
           "error": "Not Found"
         }
       },
-      "UserRole": {
-        "type": "string",
-        "enum": ["USER", "ORGANIZER", "PARTICIPANT"]
-      },
       "UserStatus": {
         "type": "string",
         "enum": ["ACTIVE", "INACTIVE", "BANNED"]
@@ -1556,7 +1540,6 @@
           "id",
           "email",
           "fullName",
-          "role",
           "status",
           "emailVerified",
           "tags",
@@ -1569,7 +1552,6 @@
           "id": { "type": "string", "format": "uuid" },
           "email": { "type": "string", "format": "email", "example": "user@example.com" },
           "fullName": { "type": "string", "example": "Jane Doe" },
-          "role": { "$ref": "#/components/schemas/UserRole" },
           "status": { "$ref": "#/components/schemas/UserStatus" },
           "emailVerified": { "type": "boolean", "example": true },
           "emailVerifiedAt": {

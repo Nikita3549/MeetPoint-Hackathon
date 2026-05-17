@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { PrismaClient, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const BCRYPT_ROUNDS = 10;
@@ -9,7 +9,6 @@ export async function createUser(
     data: {
         email: string;
         fullName: string;
-        role?: UserRole;
         status?: UserStatus;
         password?: string;
     },
@@ -23,7 +22,6 @@ export async function createUser(
         data: {
             email: data.email,
             fullName: data.fullName,
-            role: data.role ?? UserRole.USER,
             status: data.status ?? UserStatus.ACTIVE,
             hashedPassword,
             emailVerified: true,

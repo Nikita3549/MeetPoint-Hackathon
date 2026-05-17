@@ -1,7 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JwtStrategy } from './jwt.strategy';
 
@@ -35,7 +34,6 @@ describe('JwtStrategy', () => {
         const user = {
             id: 'user-1',
             email: 'user@example.com',
-            role: UserRole.PARTICIPANT,
         };
         prisma.user.findFirst.mockResolvedValue(user);
 
@@ -43,7 +41,6 @@ describe('JwtStrategy', () => {
             strategy.validate({
                 sub: 'user-1',
                 email: 'user@example.com',
-                role: UserRole.PARTICIPANT,
             }),
         ).resolves.toEqual(user);
     });
@@ -55,7 +52,6 @@ describe('JwtStrategy', () => {
             strategy.validate({
                 sub: 'user-1',
                 email: 'user@example.com',
-                role: UserRole.PARTICIPANT,
             }),
         ).rejects.toThrow(UnauthorizedException);
     });

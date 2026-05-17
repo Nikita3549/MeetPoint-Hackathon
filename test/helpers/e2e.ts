@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { User, UserRole } from '@prisma/client';
+import { User } from '@prisma/client';
 import request from 'supertest';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { createE2eApp } from './create-e2e-app';
@@ -83,7 +83,6 @@ export async function createE2eFixture(): Promise<E2eFixture> {
         const organizer = await createUser(prisma, {
             email: 'organizer@example.com',
             fullName: 'Organizer',
-            role: UserRole.ORGANIZER,
         });
         const userA = await createUser(prisma, {
             email: 'user-a@example.com',

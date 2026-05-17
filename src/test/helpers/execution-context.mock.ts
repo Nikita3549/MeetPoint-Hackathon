@@ -1,7 +1,7 @@
 import { ExecutionContext } from '@nestjs/common';
 
 export function createMockExecutionContext(options: {
-    user?: { id: string; email: string; role: string };
+    user?: { id: string; email: string };
     handlerMetadata?: Map<string, unknown>;
     classMetadata?: Map<string, unknown>;
 }): ExecutionContext {

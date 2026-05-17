@@ -5,7 +5,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MatchRequestStatus, UserRole } from '@prisma/client';
+import { MatchRequestStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MatchRequestsService } from './match-requests.service';
 
@@ -30,13 +30,11 @@ describe('MatchRequestsService', () => {
     const userA = {
         id: 'user-a',
         email: 'a@example.com',
-        role: UserRole.PARTICIPANT,
     };
 
     const userB = {
         id: 'user-b',
         email: 'b@example.com',
-        role: UserRole.PARTICIPANT,
     };
 
     const userWithTags = (

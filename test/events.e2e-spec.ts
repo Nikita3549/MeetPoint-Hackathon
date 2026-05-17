@@ -131,7 +131,7 @@ describe('Events (e2e)', () => {
             .expect(400);
     });
 
-    it('non-organizer cannot create event', async () => {
+    it('participant can create event', async () => {
         const { app, login, seedUsers } = getE2eFixture();
         await seedUsers();
 
@@ -146,6 +146,9 @@ describe('Events (e2e)', () => {
                 description: 'Networking for developers',
                 tags: ['backend'],
             })
-            .expect(403);
+            .expect(201)
+            .expect((response) => {
+                expect(response.body.title).toBe('Hackathon Meetup');
+            });
     });
 });

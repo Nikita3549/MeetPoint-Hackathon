@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MatchRequestStatus, UserRole } from '@prisma/client';
+import { MatchRequestStatus } from '@prisma/client';
 import { TagsService } from '../../common/tags/tags.service';
 import { ImagesService } from '../images/images.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -42,13 +42,11 @@ describe('EventsService', () => {
     const organizer = {
         id: 'org-1',
         email: 'org@example.com',
-        role: UserRole.ORGANIZER,
     };
 
     const participant = {
         id: 'user-1',
         email: 'user@example.com',
-        role: UserRole.PARTICIPANT,
     };
 
     const eventRecord = {

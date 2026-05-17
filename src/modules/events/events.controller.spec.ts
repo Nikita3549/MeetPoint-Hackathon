@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserRole } from '@prisma/client';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 
@@ -23,7 +22,6 @@ describe('EventsController', () => {
     const user = {
         id: 'user-1',
         email: 'user@example.com',
-        role: UserRole.ORGANIZER,
     };
 
     beforeEach(async () => {
