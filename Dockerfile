@@ -10,6 +10,7 @@ RUN npm install
 
 COPY ./src ./src
 COPY ./prisma ./prisma
+COPY ./test ./test
 COPY eslint.config.mjs .prettierrc .prettierignore ./
 
 RUN npx prisma generate --schema prisma/schema
@@ -39,6 +40,7 @@ COPY --chown=node:node --from=build /opt/api/node_modules ./node_modules
 COPY --chown=node:node --from=build /opt/api/dist ./dist
 COPY --chown=node:node prisma ./prisma
 COPY --chown=node:node src ./src
+COPY --chown=node:node test ./test
 COPY --chown=node:node package.json tsconfig.build.json tsconfig.json prisma.config.ts ./
 
 ENTRYPOINT npx prisma migrate deploy && \
