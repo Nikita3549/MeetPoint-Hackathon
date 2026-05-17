@@ -12,6 +12,7 @@ describe('MatchRequestsController', () => {
         accept: jest.fn(),
         reject: jest.fn(),
         findMatches: jest.fn(),
+        matchWithoutConfirm: jest.fn(),
     };
 
     const user = {
@@ -99,6 +100,23 @@ describe('MatchRequestsController', () => {
             user,
             'event-1',
             'req-1',
+        );
+    });
+
+    it('delegates matchWithoutConfirm', async () => {
+        const dto = { toUserId: 'user-2' };
+        matchRequestsService.matchWithoutConfirm.mockResolvedValue({
+            id: 'req-1',
+            status: 'ACCEPTED',
+        });
+
+        await expect(
+            controller.matchWithoutConfirm(user, 'event-1', dto),
+        ).resolves.toEqual({ id: 'req-1', status: 'ACCEPTED' });
+        expect(matchRequestsService.matchWithoutConfirm).toHaveBeenCalledWith(
+            user,
+            'event-1',
+            dto,
         );
     });
 });

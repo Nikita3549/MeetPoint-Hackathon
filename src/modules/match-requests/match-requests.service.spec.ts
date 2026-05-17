@@ -311,6 +311,124 @@ describe('MatchRequestsService', () => {
         });
     });
 
+    describe('matchWithoutConfirm', () => {
+        it('throws when matching with self', async () => {
+            await expect(
+                service.matchWithoutConfirm(userA, 'event-1', {
+                    toUserId: 'user-a',
+                }),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('creates accepted match request immediately', async () => {
+            const accepted = {
+                ...matchRequestRecord,
+                status: MatchRequestStatus.ACCEPTED,
+                respondedAt: new Date('2025-01-02'),
+            };
+            prisma.matchRequest.findUnique.mockResolvedValue(null);
+            prisma.matchRequest.create.mockResolvedValue(accepted);
+
+            await expect(
+                service.matchWithoutConfirm(userA, 'event-1', {
+                    toUserId: 'user-b',
+                }),
+            ).resolves.toEqual({
+                id: 'req-1',
+                eventId: 'event-1',
+                status: MatchRequestStatus.ACCEPTED,
+                fromUser: {
+                    id: 'user-a',
+                    fullName: 'User A',
+                    tags: [{ id: 'tag-1', name: 'backend' }],
+                },
+                toUser: { id: 'user-b', fullName: 'User B', tags: [] },
+                createdAt: matchRequestRecord.createdAt,
+                respondedAt: accepted.respondedAt,
+            });
+            expect(prisma.matchRequest.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        status: MatchRequestStatus.ACCEPTED,
+                        respondedAt: expect.any(Date),
+                    }),
+                }),
+            );
+        });
+
+        it('accepts existing pending reverse request', async () => {
+            const reverseRequest = {
+                ...matchRequestRecord,
+                fromUserId: 'user-b',
+                toUserId: 'user-a',
+                fromUser: userWithTags('user-b', 'User B'),
+                toUser: userWithTags('user-a', 'User A', [
+                    { id: 'tag-1', name: 'backend' },
+                ]),
+            };
+            const accepted = {
+                ...reverseRequest,
+                status: MatchRequestStatus.ACCEPTED,
+                respondedAt: new Date('2025-01-02'),
+            };
+            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
+                if ('eventId_fromUserId_toUserId' in args.where) {
+                    const key = args.where.eventId_fromUserId_toUserId;
+                    if (
+                        key.fromUserId === 'user-b' &&
+                        key.toUserId === 'user-a'
+                    ) {
+                        return reverseRequest;
+                    }
+                }
+                return null;
+            });
+            prisma.matchRequest.update.mockResolvedValue(accepted);
+
+            await expect(
+                service.matchWithoutConfirm(userA, 'event-1', {
+                    toUserId: 'user-b',
+                }),
+            ).resolves.toEqual(
+                expect.objectContaining({
+                    status: MatchRequestStatus.ACCEPTED,
+                }),
+            );
+            expect(prisma.matchRequest.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: reverseRequest.id },
+                    data: expect.objectContaining({
+                        status: MatchRequestStatus.ACCEPTED,
+                    }),
+                }),
+            );
+        });
+
+        it('throws when users are already matched', async () => {
+            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
+                if ('eventId_fromUserId_toUserId' in args.where) {
+                    const key = args.where.eventId_fromUserId_toUserId;
+                    if (
+                        key.fromUserId === 'user-a' &&
+                        key.toUserId === 'user-b'
+                    ) {
+                        return {
+                            ...matchRequestRecord,
+                            status: MatchRequestStatus.ACCEPTED,
+                        };
+                    }
+                }
+                return null;
+            });
+
+            await expect(
+                service.matchWithoutConfirm(userA, 'event-1', {
+                    toUserId: 'user-b',
+                }),
+            ).rejects.toThrow(ConflictException);
+        });
+    });
+
     describe('findMatches', () => {
         it('returns matched users with contacts', async () => {
             const respondedAt = new Date('2025-01-02');

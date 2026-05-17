@@ -9,6 +9,7 @@ import { MatchRequest, MatchRequestStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateMatchRequestDto } from './dto/create-match-request.dto';
+import { MatchWithoutConfirmDto } from './dto/match-without-confirm.dto';
 import { MatchRequestResponseDto } from './dto/match-request-response.dto';
 import { MatchRequestUserDto } from './dto/match-request-user.dto';
 import { MatchResponseDto } from './dto/match-response.dto';
@@ -251,6 +252,78 @@ export class MatchRequestsService {
         return requests.map((request) =>
             this.toMatchResponse(request, user.id),
         );
+    }
+
+    async matchWithoutConfirm(
+        user: AuthenticatedUser,
+        eventId: string,
+        dto: MatchWithoutConfirmDto,
+    ): Promise<MatchRequestResponseDto> {
+        if (user.id === dto.toUserId) {
+            throw new BadRequestException('Cannot match with yourself');
+        }
+
+        await this.ensureEventExists(eventId);
+        await this.ensureParticipant(eventId, user.id);
+        await this.ensureParticipant(eventId, dto.toUserId);
+
+        const now = new Date();
+
+        const outgoing = await this.prisma.matchRequest.findUnique({
+            where: {
+                eventId_fromUserId_toUserId: {
+                    eventId,
+                    fromUserId: user.id,
+                    toUserId: dto.toUserId,
+                },
+            },
+        });
+
+        if (outgoing?.status === MatchRequestStatus.ACCEPTED) {
+            throw new ConflictException('Users are already matched');
+        }
+
+        const reverse = await this.prisma.matchRequest.findUnique({
+            where: {
+                eventId_fromUserId_toUserId: {
+                    eventId,
+                    fromUserId: dto.toUserId,
+                    toUserId: user.id,
+                },
+            },
+        });
+
+        if (reverse?.status === MatchRequestStatus.ACCEPTED) {
+            throw new ConflictException('Users are already matched');
+        }
+
+        const existingRequest = outgoing ?? reverse;
+
+        if (existingRequest) {
+            const updated = await this.prisma.matchRequest.update({
+                where: { id: existingRequest.id },
+                data: {
+                    status: MatchRequestStatus.ACCEPTED,
+                    respondedAt: now,
+                },
+                include: buildMatchRequestInclude(eventId),
+            });
+
+            return this.toResponse(updated);
+        }
+
+        const created = await this.prisma.matchRequest.create({
+            data: {
+                eventId,
+                fromUserId: user.id,
+                toUserId: dto.toUserId,
+                status: MatchRequestStatus.ACCEPTED,
+                respondedAt: now,
+            },
+            include: buildMatchRequestInclude(eventId),
+        });
+
+        return this.toResponse(created);
     }
 
     private async findOwnedIncomingRequest(

@@ -183,4 +183,67 @@ describe('Match requests (e2e)', () => {
             .send({ toUserId: userA.id })
             .expect(400);
     });
+
+    it('matches instantly without confirmation via QR scan flow', async () => {
+        const { app, event, userA, userB, tokenA, tokenB } =
+            await setupEventWithParticipants();
+
+        await request(app.getHttpServer())
+            .put('/v1/users/me/contacts')
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({
+                contacts: [{ type: ContactType.TELEGRAM, value: '@user_a' }],
+            })
+            .expect(200);
+
+        const matchResponse = await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests/instant`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({ toUserId: userB.id })
+            .expect(201);
+
+        expect(matchResponse.body.status).toBe('ACCEPTED');
+        expect(matchResponse.body.fromUser.id).toBe(userA.id);
+        expect(matchResponse.body.toUser.id).toBe(userB.id);
+
+        await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/match-requests/incoming`)
+            .set('Authorization', `Bearer ${tokenB}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(0);
+            });
+
+        await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/matches`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(1);
+                expect(response.body[0].user.id).toBe(userB.id);
+            });
+
+        await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/matches`)
+            .set('Authorization', `Bearer ${tokenB}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(1);
+                expect(response.body[0].user.id).toBe(userA.id);
+                expect(response.body[0].contacts).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            type: ContactType.TELEGRAM,
+                            value: '@user_a',
+                        }),
+                    ]),
+                );
+            });
+
+        await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests/instant`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({ toUserId: userB.id })
+            .expect(409);
+    });
 });

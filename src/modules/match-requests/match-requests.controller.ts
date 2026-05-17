@@ -20,6 +20,7 @@ import { JWT_AUTH_SCHEME } from '../../swagger/swagger.constants';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
 import { CreateMatchRequestDto } from './dto/create-match-request.dto';
+import { MatchWithoutConfirmDto } from './dto/match-without-confirm.dto';
 import { MatchRequestResponseDto } from './dto/match-request-response.dto';
 import { MatchResponseDto } from './dto/match-response.dto';
 import { MatchRequestsService } from './match-requests.service';
@@ -88,6 +89,26 @@ export class MatchRequestsController {
         @Param('requestId', ParseUUIDPipe) requestId: string,
     ): Promise<MatchRequestResponseDto> {
         return this.matchRequestsService.reject(user, eventId, requestId);
+    }
+
+    @Post('match-requests/instant')
+    @ApiOperation({
+        summary: 'Match with another participant instantly (e.g. QR scan)',
+    })
+    @ApiCreatedResponse({ type: MatchRequestResponseDto })
+    @ApiNotFoundResponse({ description: 'Event not found' })
+    @ApiForbiddenResponse({ description: 'User is not registered for event' })
+    @ApiConflictResponse({ description: 'Users are already matched' })
+    matchWithoutConfirm(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('eventId', ParseUUIDPipe) eventId: string,
+        @Body() dto: MatchWithoutConfirmDto,
+    ): Promise<MatchRequestResponseDto> {
+        return this.matchRequestsService.matchWithoutConfirm(
+            user,
+            eventId,
+            dto,
+        );
     }
 
     @Get('matches')

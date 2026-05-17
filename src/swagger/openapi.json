@@ -815,6 +815,62 @@
         }
       }
     },
+    "/v1/events/{id}/match-requests/instant": {
+      "post": {
+        "tags": ["match-requests"],
+        "summary": "Match with another participant instantly (e.g. QR scan)",
+        "operationId": "matchWithoutConfirm",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchWithoutConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Users matched instantly",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenNotRegistered"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundEvent"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictMatch"
+          }
+        }
+      }
+    },
     "/v1/events/{id}/matches": {
       "get": {
         "tags": ["match-requests"],
@@ -1592,6 +1648,17 @@
         }
       },
       "CreateMatchRequest": {
+        "type": "object",
+        "required": ["toUserId"],
+        "properties": {
+          "toUserId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        }
+      },
+      "MatchWithoutConfirm": {
         "type": "object",
         "required": ["toUserId"],
         "properties": {
