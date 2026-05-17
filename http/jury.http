@@ -17,8 +17,13 @@ POST {{baseUrl}}/v1/auth/register
 Content-Type: application/json
 
 {
-  "email": "jury-register@example.com",
-  "password": "{{password}}"
+  "username": "jury-user",
+  "contacts": [
+    {
+      "type": "TELEGRAM",
+      "value": "@jury_user"
+    }
+  ]
 }
 
 ### 3. Login user1 — вход

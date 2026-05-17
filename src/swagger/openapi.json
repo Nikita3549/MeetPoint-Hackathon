@@ -89,15 +89,15 @@
     "/v1/auth/register": {
       "post": {
         "tags": ["auth"],
-        "summary": "Register",
-        "description": "Create an account with email and password. Returns a JWT access token (same response as login).",
+        "summary": "Register with username and contacts",
+        "description": "Create an account with username and contacts. Email and password are generated automatically. Returns a JWT access token (same response as login).",
         "operationId": "register",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "$ref": "#/components/schemas/RegisterRequest"
               }
             }
           }
@@ -1381,6 +1381,32 @@
             "minLength": 1,
             "example": "password123"
           }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["username", "contacts"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "example": "johndoe"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserContactItem"
+            }
+          }
+        },
+        "example": {
+          "username": "johndoe",
+          "contacts": [
+            {
+              "type": "TELEGRAM",
+              "value": "@username"
+            }
+          ]
         }
       },
       "LoginResponse": {
