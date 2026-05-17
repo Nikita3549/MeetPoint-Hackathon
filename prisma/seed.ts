@@ -1,8 +1,4 @@
-import {
-    ContactType,
-    MatchRequestStatus,
-    PrismaClient,
-} from '@prisma/client';
+import { ContactType, MatchRequestStatus, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { truncateDatabase } from '../test/helpers/database';
 
@@ -340,8 +336,7 @@ async function main() {
         const tagIds = await resolveTagIds(eventSeed.tags);
 
         let coverImageId: string | undefined;
-        const coverSeed =
-            'cover' in eventSeed ? eventSeed.cover : undefined;
+        const coverSeed = 'cover' in eventSeed ? eventSeed.cover : undefined;
         if (coverSeed) {
             const cover = await prisma.image.create({
                 data: {
