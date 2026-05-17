@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserStatus } from '@prisma/client';
+import { UserEventResponseDto } from '../../events/dto/user-event-response.dto';
 import { UserContactResponseDto } from './user-contact-response.dto';
 import { AvatarImageDto } from './avatar-image.dto';
+import { UserMatchResponseDto } from '../../match-requests/dto/user-match-response.dto';
 
 export class UserResponseDto {
     @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
@@ -33,4 +35,10 @@ export class UserResponseDto {
 
     @ApiProperty({ example: AvatarImageDto })
     avatarImage: AvatarImageDto | null;
+
+    @ApiProperty({ type: [UserEventResponseDto] })
+    events: UserEventResponseDto[];
+
+    @ApiProperty({ type: [UserMatchResponseDto] })
+    matches: UserMatchResponseDto[];
 }

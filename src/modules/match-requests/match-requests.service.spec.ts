@@ -426,6 +426,66 @@ describe('MatchRequestsService', () => {
         });
     });
 
+    describe('findAllMatchesForUser', () => {
+        it('returns all accepted matches across events', async () => {
+            const respondedAt = new Date('2025-01-02');
+            prisma.matchRequest.findMany.mockResolvedValue([
+                {
+                    id: 'req-1',
+                    eventId: 'event-1',
+                    fromUserId: 'user-a',
+                    toUserId: 'user-b',
+                    status: MatchRequestStatus.ACCEPTED,
+                    respondedAt,
+                    updatedAt: new Date('2025-01-01'),
+                    event: { id: 'event-1', title: 'Meetup' },
+                    fromUser: userWithTags('user-a', 'User A'),
+                    toUser: {
+                        ...userWithTags('user-b', 'User B', [
+                            { id: 'tag-2', name: 'ai' },
+                        ]),
+                        eventParticipations: [
+                            {
+                                eventId: 'event-1',
+                                tags: [{ id: 'tag-2', name: 'ai' }],
+                            },
+                        ],
+                        contacts: [
+                            {
+                                id: 'contact-1',
+                                type: 'TELEGRAM',
+                                value: '@user',
+                            },
+                        ],
+                    },
+                },
+            ]);
+
+            await expect(
+                service.findAllMatchesForUser('user-a'),
+            ).resolves.toEqual([
+                {
+                    matchRequestId: 'req-1',
+                    eventId: 'event-1',
+                    eventTitle: 'Meetup',
+                    user: {
+                        id: 'user-b',
+                        fullName: 'User B',
+                        tags: [{ id: 'tag-2', name: 'ai' }],
+                    },
+                    contacts: [
+                        {
+                            id: 'contact-1',
+                            type: 'TELEGRAM',
+                            value: '@user',
+                        },
+                    ],
+                    matchedAt: respondedAt,
+                },
+            ]);
+        });
+    });
+
     describe('findMatches', () => {
         it('returns matched users with contacts', async () => {
             const respondedAt = new Date('2025-01-02');

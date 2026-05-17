@@ -1142,6 +1142,54 @@
               "value": "@username"
             }
           ],
+          "events": [
+            {
+              "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+              "slug": "abc-defg-hij",
+              "joinUrl": "https://meetpoint.app/e/abc-defg-hij",
+              "title": "Tech Conference 2026",
+              "date": "2026-06-15T10:00:00.000Z",
+              "description": "Annual networking event",
+              "organizer": {
+                "id": "d4e5f6a7-b8c9-0123-def0-123456789abc",
+                "fullName": "Jane Organizer"
+              },
+              "tags": [
+                {
+                  "id": "e5f6a7b8-c9d0-1234-ef01-234567890def",
+                  "name": "backend"
+                }
+              ],
+              "createdAt": "2026-05-15T12:00:00.000Z",
+              "updatedAt": "2026-05-16T08:00:00.000Z",
+              "registeredAt": "2026-05-15T12:30:00.000Z"
+            }
+          ],
+          "matches": [
+            {
+              "matchRequestId": "f6a7b8c9-d0e1-2345-f012-345678901fed",
+              "eventId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+              "eventTitle": "Tech Conference 2026",
+              "user": {
+                "id": "a7b8c9d0-e1f2-3456-0123-456789abcdef",
+                "fullName": "Bob Smith",
+                "tags": [
+                  {
+                    "id": "e5f6a7b8-c9d0-1234-ef01-234567890def",
+                    "name": "ai"
+                  }
+                ]
+              },
+              "contacts": [
+                {
+                  "id": "b8c9d0e1-f2a3-4567-1234-567890abcdef",
+                  "type": "TELEGRAM",
+                  "value": "@bob"
+                }
+              ],
+              "matchedAt": "2026-05-16T09:00:00.000Z"
+            }
+          ],
           "createdAt": "2026-05-15T12:00:00.000Z",
           "updatedAt": "2026-05-16T08:00:00.000Z",
           "avatarImage": {
@@ -1160,6 +1208,8 @@
           "emailVerified": true,
           "emailVerifiedAt": "2026-05-15T12:00:00.000Z",
           "contacts": [],
+          "events": [],
+          "matches": [],
           "createdAt": "2026-05-15T12:00:00.000Z",
           "updatedAt": "2026-05-16T09:30:00.000Z",
           "avatarImage": null
@@ -1522,6 +1572,8 @@
           "emailVerified",
           "emailVerifiedAt",
           "contacts",
+          "events",
+          "matches",
           "createdAt",
           "updatedAt",
           "avatarImage"
@@ -1542,6 +1594,14 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/UserContactResponse" }
           },
+          "events": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserEventResponse" }
+          },
+          "matches": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserMatchResponse" }
+          },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
           "avatarImage": {
@@ -1549,6 +1609,19 @@
             "allOf": [{ "$ref": "#/components/schemas/AvatarImage" }]
           }
         }
+      },
+      "UserMatchResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/MatchResponse" },
+          {
+            "type": "object",
+            "required": ["eventId", "eventTitle"],
+            "properties": {
+              "eventId": { "type": "string", "format": "uuid" },
+              "eventTitle": { "type": "string", "example": "Tech Conference 2026" }
+            }
+          }
+        ]
       },
       "UserEventResponse": {
         "allOf": [
