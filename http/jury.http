@@ -1,0 +1,314 @@
+### Каждый endpoint один раз
+### Run по порядку
+
+@baseUrl = https://hack-umms-team-3-backend-virtual-machine-2311dc.vm.prodcontest.com
+@password = password123
+@slugBackend = bkd-mtup-jun
+@acceptRequestId = aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaa0001
+@rejectRequestId = aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaa0002
+@user5Id = bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbb005
+@user8Id = bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbb008
+
+### 1. Health — сервер жив
+GET {{baseUrl}}/health
+
+### 2. Register — регистрация
+POST {{baseUrl}}/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "jury-register@example.com",
+  "password": "{{password}}"
+}
+
+### 3. Login user1 — вход
+### @name loginUser1
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user1@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser1", response.body.accessToken);
+%}
+
+### 4. Профиль — кто я
+GET {{baseUrl}}/v1/users/me
+Authorization: Bearer {{tokenUser1}}
+
+### 5. Обновить профиль
+PUT {{baseUrl}}/v1/users/me
+Authorization: Bearer {{tokenUser1}}
+Content-Type: application/json
+
+{
+  "fullName": "Иван Петров"
+}
+
+### 6. Мои контакты
+GET {{baseUrl}}/v1/users/me/contacts
+Authorization: Bearer {{tokenUser1}}
+
+### 7. Сохранить контакты
+PUT {{baseUrl}}/v1/users/me/contacts
+Authorization: Bearer {{tokenUser1}}
+Content-Type: application/json
+
+{
+  "contacts": [
+    { "type": "TELEGRAM", "value": "@ivan_petrov" },
+    { "type": "PHONE", "value": "+79001234501" }
+  ]
+}
+
+### 8. Аватар — загрузка
+POST {{baseUrl}}/v1/users/me/avatar
+Authorization: Bearer {{tokenUser1}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="fixture.png"
+Content-Type: image/png
+
+< ./fixture.png
+--WebAppBoundary--
+
+### 9. Список событий
+GET {{baseUrl}}/v1/events
+Authorization: Bearer {{tokenUser1}}
+
+### 10. Событие по slug
+### @name backendEvent
+GET {{baseUrl}}/v1/events/slug/{{slugBackend}}
+Authorization: Bearer {{tokenUser1}}
+
+> {%
+    client.global.set("backendEventId", response.body.id);
+%}
+
+### 11. Событие по id
+GET {{baseUrl}}/v1/events/{{backendEventId}}
+Authorization: Bearer {{tokenUser1}}
+
+### 12. Мои события
+GET {{baseUrl}}/v1/users/me/events
+Authorization: Bearer {{tokenUser1}}
+
+### 13. Участники + теги
+GET {{baseUrl}}/v1/events/{{backendEventId}}/participants?tags=backend
+Authorization: Bearer {{tokenUser1}}
+
+### 14. Мои теги на событии
+GET {{baseUrl}}/v1/events/{{backendEventId}}/participants/me/tags
+Authorization: Bearer {{tokenUser1}}
+
+### 15. Задать теги
+PUT {{baseUrl}}/v1/events/{{backendEventId}}/participants/me/tags
+Authorization: Bearer {{tokenUser1}}
+Content-Type: application/json
+
+{
+  "tags": ["backend", "nodejs"]
+}
+
+### 16. Статистика события
+GET {{baseUrl}}/v1/events/{{backendEventId}}/stats
+Authorization: Bearer {{tokenUser1}}
+
+### 17. Редактировать событие
+PUT {{baseUrl}}/v1/events/{{backendEventId}}
+Authorization: Bearer {{tokenUser1}}
+Content-Type: application/json
+
+{
+  "title": "Backend & DevOps Meetup"
+}
+
+### 18. Создать событие
+POST {{baseUrl}}/v1/events
+Authorization: Bearer {{tokenUser1}}
+Content-Type: application/json
+
+{
+  "title": "Jury Check Event",
+  "date": "2026-08-01T12:00:00.000Z",
+  "description": "Событие для проверки API",
+  "tags": ["jury", "check"]
+}
+
+> {%
+    client.global.set("juryEventId", response.body.id);
+%}
+
+### 19. Обложка события
+POST {{baseUrl}}/v1/events/{{juryEventId}}/image
+Authorization: Bearer {{tokenUser1}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="fixture.png"
+Content-Type: image/png
+
+< ./fixture.png
+--WebAppBoundary--
+
+### 20. Login user18
+### @name loginUser18
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user18@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser18", response.body.accessToken);
+%}
+
+### 21. Регистрация по slug
+POST {{baseUrl}}/v1/events/slug/{{slugBackend}}/register
+Authorization: Bearer {{tokenUser18}}
+
+### 22. Login user17
+### @name loginUser17
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user17@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser17", response.body.accessToken);
+%}
+
+### 23. Регистрация по id
+POST {{baseUrl}}/v1/events/{{backendEventId}}/register
+Authorization: Bearer {{tokenUser17}}
+
+### 24. Login user6
+### @name loginUser6
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user6@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser6", response.body.accessToken);
+%}
+
+### 25. Отправить match-запрос
+POST {{baseUrl}}/v1/events/{{backendEventId}}/match-requests
+Authorization: Bearer {{tokenUser6}}
+Content-Type: application/json
+
+{
+  "toUserId": "{{user5Id}}"
+}
+
+### 26. Login user7
+### @name loginUser7
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user7@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser7", response.body.accessToken);
+%}
+
+### 27. Login user8
+### @name loginUser8
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user8@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser8", response.body.accessToken);
+%}
+
+### 28. Отклонить запрос
+POST {{baseUrl}}/v1/events/{{backendEventId}}/match-requests/{{rejectRequestId}}/reject
+Authorization: Bearer {{tokenUser8}}
+
+### 29. Мгновенный match
+POST {{baseUrl}}/v1/events/{{backendEventId}}/match-requests/instant
+Authorization: Bearer {{tokenUser7}}
+Content-Type: application/json
+
+{
+  "toUserId": "{{user8Id}}"
+}
+
+### 30. Login user4
+### @name loginUser4
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user4@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser4", response.body.accessToken);
+%}
+
+### 31. Входящие запросы
+GET {{baseUrl}}/v1/events/{{backendEventId}}/match-requests/incoming
+Authorization: Bearer {{tokenUser4}}
+
+### 32. Принять запрос
+POST {{baseUrl}}/v1/events/{{backendEventId}}/match-requests/{{acceptRequestId}}/accept
+Authorization: Bearer {{tokenUser4}}
+
+### 33. Login user3
+### @name loginUser3
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user3@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser3", response.body.accessToken);
+%}
+
+### 34. Исходящие запросы
+GET {{baseUrl}}/v1/events/{{backendEventId}}/match-requests/outgoing
+Authorization: Bearer {{tokenUser3}}
+
+### 35. Login user2
+### @name loginUser2
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user2@example.com",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("tokenUser2", response.body.accessToken);
+%}
+
+### 36. Мои матчи
+GET {{baseUrl}}/v1/events/{{backendEventId}}/matches
+Authorization: Bearer {{tokenUser2}}

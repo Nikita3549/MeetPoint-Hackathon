@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Hackaton Prod API",
-    "description": "Backend API",
+    "description": "Проверка жюри: http/jury.http (REST Client). Login: user1@example.com / password123. Подробнее: docs/VERIFICATION.md",
     "version": "1.0.0"
   },
   "servers": [
@@ -1130,7 +1130,7 @@
         "summary": "User profile",
         "value": {
           "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "email": "user@example.com",
+          "email": "user1@example.com",
           "fullName": "Jane Doe",
           "status": "ACTIVE",
           "emailVerified": true,
@@ -1324,7 +1324,7 @@
           "email": {
             "type": "string",
             "format": "email",
-            "example": "user@example.com"
+            "example": "user1@example.com"
           },
           "password": {
             "type": "string",
@@ -1528,7 +1528,7 @@
         ],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
-          "email": { "type": "string", "format": "email", "example": "user@example.com" },
+          "email": { "type": "string", "format": "email", "example": "user1@example.com" },
           "fullName": { "type": "string", "example": "Jane Doe" },
           "status": { "$ref": "#/components/schemas/UserStatus" },
           "emailVerified": { "type": "boolean", "example": true },

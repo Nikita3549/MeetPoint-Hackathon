@@ -1,10 +1,15 @@
 import { ContactType, MatchRequestStatus, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { truncateDatabase } from '../test/helpers/database';
+import {
+    SEED_MATCH_REQUEST_ID,
+    SEED_PASSWORD,
+    SEED_USER_ID,
+} from './seed.constants';
 
 const prisma = new PrismaClient();
 
-const DEFAULT_PASSWORD = 'password123';
+const DEFAULT_PASSWORD = SEED_PASSWORD;
 const BCRYPT_ROUNDS = 10;
 
 const USERS = [
@@ -129,8 +134,15 @@ const EVENTS = [
                 respondedAt: new Date('2026-05-10T12:00:00.000Z'),
             },
             {
+                id: SEED_MATCH_REQUEST_ID.acceptUser3ToUser4,
                 from: 'user3@example.com',
                 to: 'user4@example.com',
+                status: MatchRequestStatus.PENDING,
+            },
+            {
+                id: SEED_MATCH_REQUEST_ID.rejectUser7ToUser8,
+                from: 'user7@example.com',
+                to: 'user8@example.com',
                 status: MatchRequestStatus.PENDING,
             },
             {
@@ -259,9 +271,15 @@ async function resolveTagIds(tagNames: readonly string[]) {
     return ids;
 }
 
+const USER_IDS_BY_EMAIL: Record<string, string> = {
+    'user5@example.com': SEED_USER_ID.user5,
+    'user8@example.com': SEED_USER_ID.user8,
+};
+
 async function createUser(
     hashedPassword: string,
     data: {
+        id?: string;
         email: string;
         fullName: string;
         contacts: ReadonlyArray<{ type: ContactType; value: string }>;
@@ -291,6 +309,7 @@ async function createUser(
 
     const user = await prisma.user.create({
         data: {
+            id: data.id,
             email: data.email,
             hashedPassword,
             fullName: data.fullName,
@@ -323,7 +342,10 @@ async function main() {
     const userIds = new Map<string, string>();
 
     for (const userSeed of USERS) {
-        const user = await createUser(hashedPassword, userSeed);
+        const user = await createUser(hashedPassword, {
+            ...userSeed,
+            id: USER_IDS_BY_EMAIL[userSeed.email],
+        });
         userIds.set(userSeed.email, user.id);
     }
 
@@ -392,6 +414,7 @@ async function main() {
 
             await prisma.matchRequest.create({
                 data: {
+                    id: 'id' in matchSeed ? matchSeed.id : undefined,
                     eventId: event.id,
                     fromUserId,
                     toUserId,
