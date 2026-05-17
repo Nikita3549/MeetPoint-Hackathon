@@ -6,9 +6,9 @@ import { SWAGGER_PATH } from './swagger.constants';
 
 function loadOpenApiDocument(): OpenAPIObject {
     const candidates = [
+        join(process.cwd(), 'src', 'swagger', 'openapi.json'),
         join(__dirname, 'openapi.json'),
         join(__dirname, '..', '..', 'swagger', 'openapi.json'),
-        join(process.cwd(), 'src', 'swagger', 'openapi.json'),
         join(process.cwd(), 'dist', 'swagger', 'openapi.json'),
     ];
 

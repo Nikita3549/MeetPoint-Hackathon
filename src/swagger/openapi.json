@@ -914,6 +914,7 @@
       "get": {
         "tags": ["users"],
         "summary": "Get current user profile",
+        "description": "Returns the authenticated user's profile including contacts and avatar.",
         "operationId": "getCurrentUser",
         "security": [{ "bearerAuth": [] }],
         "responses": {
@@ -923,6 +924,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserResponse"
+                },
+                "examples": {
+                  "profile": {
+                    "$ref": "#/components/examples/UserMeResponse"
+                  }
                 }
               }
             }
@@ -938,6 +944,7 @@
       "put": {
         "tags": ["users"],
         "summary": "Update current user profile",
+        "description": "Updates `fullName` and/or `email`. Contacts and avatar are managed via `/users/me/contacts` and `/users/me/avatar`. Event tags — via `/events/{id}/participants/me/tags`. Unknown body fields are ignored.",
         "operationId": "updateCurrentUser",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
@@ -957,6 +964,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserResponse"
+                },
+                "examples": {
+                  "profile": {
+                    "$ref": "#/components/examples/UserMeResponseUpdated"
+                  }
                 }
               }
             }
@@ -995,69 +1007,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/v1/users/me/tags": {
-      "get": {
-        "tags": ["users"],
-        "summary": "List current user tags",
-        "operationId": "getCurrentUserTags",
-        "security": [{ "bearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "User tags",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Tag"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "tags": ["users"],
-        "summary": "Set current user tags",
-        "operationId": "setCurrentUserTags",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetUserTagsRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Tags updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Tag"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1174,6 +1123,47 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      }
+    },
+    "examples": {
+      "UserMeResponse": {
+        "summary": "User profile",
+        "value": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "email": "user@example.com",
+          "fullName": "Jane Doe",
+          "status": "ACTIVE",
+          "emailVerified": true,
+          "emailVerifiedAt": "2026-05-15T12:00:00.000Z",
+          "contacts": [
+            {
+              "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+              "type": "TELEGRAM",
+              "value": "@username"
+            }
+          ],
+          "createdAt": "2026-05-15T12:00:00.000Z",
+          "updatedAt": "2026-05-16T08:00:00.000Z",
+          "avatarImage": {
+            "id": "839c761d-80ce-41fe-bc9f-adb5a38c8429",
+            "url": "https://res.cloudinary.com/demo/image/upload/prod_images/photo.jpg"
+          }
+        }
+      },
+      "UserMeResponseUpdated": {
+        "summary": "Updated profile",
+        "value": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "email": "jane@example.com",
+          "fullName": "Jane Doe",
+          "status": "ACTIVE",
+          "emailVerified": true,
+          "emailVerifiedAt": "2026-05-15T12:00:00.000Z",
+          "contacts": [],
+          "createdAt": "2026-05-15T12:00:00.000Z",
+          "updatedAt": "2026-05-16T09:30:00.000Z",
+          "avatarImage": null
+        }
       }
     },
     "responses": {
@@ -1345,7 +1335,7 @@
       },
       "LoginResponse": {
         "type": "object",
-        "required": ["accessToken", "name", "contacts", "tags"],
+        "required": ["accessToken", "name", "contacts"],
         "properties": {
           "accessToken": {
             "type": "string",
@@ -1360,12 +1350,6 @@
             "items": {
               "$ref": "#/components/schemas/UserContactResponse"
             }
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Tag"
-            }
           }
         },
         "example": {
@@ -1376,12 +1360,6 @@
               "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
               "type": "TELEGRAM",
               "value": "@username"
-            }
-          ],
-          "tags": [
-            {
-              "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-              "name": "frontend"
             }
           ]
         }
@@ -1542,7 +1520,7 @@
           "fullName",
           "status",
           "emailVerified",
-          "tags",
+          "emailVerifiedAt",
           "contacts",
           "createdAt",
           "updatedAt",
@@ -1557,11 +1535,8 @@
           "emailVerifiedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "tags": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/Tag" }
+            "nullable": true,
+            "example": "2026-05-15T12:00:00.000Z"
           },
           "contacts": {
             "type": "array",
@@ -1569,7 +1544,10 @@
           },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
-          "avatarImage": { "$ref": "#/components/schemas/AvatarImage" }
+          "avatarImage": {
+            "nullable": true,
+            "allOf": [{ "$ref": "#/components/schemas/AvatarImage" }]
+          }
         }
       },
       "UserEventResponse": {
@@ -1587,17 +1565,6 @@
             }
           }
         ]
-      },
-      "SetUserTagsRequest": {
-        "type": "object",
-        "required": ["tags"],
-        "properties": {
-          "tags": {
-            "type": "array",
-            "items": { "type": "string" },
-            "example": ["frontend", "backend"]
-          }
-        }
       },
       "EventParticipantResponse": {
         "type": "object",
@@ -1947,8 +1914,21 @@
       },
       "UpdateUserRequest": {
         "type": "object",
-        "additionalProperties": true,
-        "description": "Updatable profile fields (fullName, email, etc.). Unknown keys are ignored.",
+        "description": "Partial profile update. Only `fullName` and `email` are applied; other fields in the body are ignored.",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Display name",
+            "example": "Jane Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Login email (must be unique among active users)",
+            "example": "jane@example.com"
+          }
+        },
         "example": {
           "fullName": "Jane Doe",
           "email": "jane@example.com"
