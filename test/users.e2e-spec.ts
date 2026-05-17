@@ -6,6 +6,49 @@ import { TEST_PNG_BUFFER } from './helpers/test-image';
 describe('Users (e2e)', () => {
     registerE2eHooks();
 
+    it('returns participating events and matches in GET /users/me', async () => {
+        const { app, login, seedUsers, createEvent, registerForEvent } =
+            getE2eFixture();
+        const { userB } = await seedUsers();
+        const organizerToken = await login('organizer@example.com');
+        const tokenA = await login('user-a@example.com');
+        const tokenB = await login('user-b@example.com');
+        const event = await createEvent(organizerToken);
+
+        await registerForEvent(tokenA, event.id);
+        await registerForEvent(tokenB, event.id);
+
+        await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests/instant`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({ toUserId: userB.id })
+            .expect(201);
+
+        await request(app.getHttpServer())
+            .get('/v1/users/me')
+            .set('Authorization', `Bearer ${tokenA}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body.events).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            id: event.id,
+                            title: 'Hackathon Meetup',
+                        }),
+                    ]),
+                );
+                expect(response.body.matches).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            eventId: event.id,
+                            eventTitle: 'Hackathon Meetup',
+                            user: expect.objectContaining({ id: userB.id }),
+                        }),
+                    ]),
+                );
+            });
+    });
+
     it('updates profile via PUT /users/me', async () => {
         const { app, login, seedUsers } = getE2eFixture();
         await seedUsers();

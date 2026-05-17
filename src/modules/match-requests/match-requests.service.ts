@@ -13,6 +13,7 @@ import { MatchWithoutConfirmDto } from './dto/match-without-confirm.dto';
 import { MatchRequestResponseDto } from './dto/match-request-response.dto';
 import { MatchRequestUserDto } from './dto/match-request-user.dto';
 import { MatchResponseDto } from './dto/match-response.dto';
+import { UserMatchResponseDto } from './dto/user-match-response.dto';
 
 function buildMatchRequestUserSelect(eventId: string, withContacts?: boolean) {
     return {
@@ -66,6 +67,31 @@ type MatchRequestWithUsersAndContacts = Prisma.MatchRequestGetPayload<{
 
 type MatchRequestUserSelected = MatchRequestWithUsers['fromUser'];
 
+const matchRequestUserProfileSelect = {
+    id: true,
+    fullName: true,
+    eventParticipations: {
+        select: {
+            eventId: true,
+            tags: {
+                select: { id: true, name: true },
+                orderBy: { name: 'asc' as const },
+            },
+        },
+    },
+    contacts: {
+        orderBy: [{ type: 'asc' as const }, { createdAt: 'asc' as const }],
+    },
+} satisfies Prisma.UserSelect;
+
+type MatchRequestWithUsersProfile = Prisma.MatchRequestGetPayload<{
+    include: {
+        event: { select: { id: true; title: true } };
+        fromUser: { select: typeof matchRequestUserProfileSelect };
+        toUser: { select: typeof matchRequestUserProfileSelect };
+    };
+}>;
+
 @Injectable()
 export class MatchRequestsService {
     constructor(private readonly prisma: PrismaService) {}
@@ -85,37 +111,29 @@ export class MatchRequestsService {
         await this.ensureParticipant(eventId, user.id);
         await this.ensureParticipant(eventId, dto.toUserId);
 
-        const existingOutgoing = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: user.id,
-                    toUserId: dto.toUserId,
-                },
-            },
-        });
+        const pairRequest = await this.findPairMatchRequest(
+            eventId,
+            user.id,
+            dto.toUserId,
+        );
 
-        if (existingOutgoing) {
-            throw new ConflictException('Match request already sent');
-        }
+        if (pairRequest) {
+            if (pairRequest.status === MatchRequestStatus.ACCEPTED) {
+                throw new ConflictException('Users are already matched');
+            }
 
-        const reverseRequest = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: dto.toUserId,
-                    toUserId: user.id,
-                },
-            },
-        });
+            if (pairRequest.status === MatchRequestStatus.REJECTED) {
+                throw new ConflictException(
+                    'Match request was declined between these users',
+                );
+            }
 
-        if (reverseRequest?.status === MatchRequestStatus.ACCEPTED) {
-            throw new ConflictException('Users are already matched');
-        }
+            if (pairRequest.fromUserId === user.id) {
+                throw new ConflictException('Match request already sent');
+            }
 
-        if (reverseRequest?.status === MatchRequestStatus.PENDING) {
             const accepted = await this.prisma.matchRequest.update({
-                where: { id: reverseRequest.id },
+                where: { id: pairRequest.id },
                 data: {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt: new Date(),
@@ -232,6 +250,29 @@ export class MatchRequestsService {
         return this.toResponse(updated);
     }
 
+    async findAllMatchesForUser(
+        userId: string,
+    ): Promise<UserMatchResponseDto[]> {
+        const requests = await this.prisma.matchRequest.findMany({
+            where: {
+                status: MatchRequestStatus.ACCEPTED,
+                OR: [{ fromUserId: userId }, { toUserId: userId }],
+            },
+            include: {
+                event: {
+                    select: { id: true, title: true },
+                },
+                fromUser: { select: matchRequestUserProfileSelect },
+                toUser: { select: matchRequestUserProfileSelect },
+            },
+            orderBy: { respondedAt: 'desc' },
+        });
+
+        return requests.map((request) =>
+            this.toUserMatchResponse(request, userId),
+        );
+    }
+
     async findMatches(
         user: AuthenticatedUser,
         eventId: string,
@@ -269,39 +310,19 @@ export class MatchRequestsService {
 
         const now = new Date();
 
-        const outgoing = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: user.id,
-                    toUserId: dto.toUserId,
-                },
-            },
-        });
+        const pairRequest = await this.findPairMatchRequest(
+            eventId,
+            user.id,
+            dto.toUserId,
+        );
 
-        if (outgoing?.status === MatchRequestStatus.ACCEPTED) {
-            throw new ConflictException('Users are already matched');
-        }
+        if (pairRequest) {
+            if (pairRequest.status === MatchRequestStatus.ACCEPTED) {
+                throw new ConflictException('Users are already matched');
+            }
 
-        const reverse = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: dto.toUserId,
-                    toUserId: user.id,
-                },
-            },
-        });
-
-        if (reverse?.status === MatchRequestStatus.ACCEPTED) {
-            throw new ConflictException('Users are already matched');
-        }
-
-        const existingRequest = outgoing ?? reverse;
-
-        if (existingRequest) {
             const updated = await this.prisma.matchRequest.update({
-                where: { id: existingRequest.id },
+                where: { id: pairRequest.id },
                 data: {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt: now,
@@ -324,6 +345,22 @@ export class MatchRequestsService {
         });
 
         return this.toResponse(created);
+    }
+
+    private async findPairMatchRequest(
+        eventId: string,
+        userId: string,
+        otherUserId: string,
+    ): Promise<MatchRequest | null> {
+        return this.prisma.matchRequest.findFirst({
+            where: {
+                eventId,
+                OR: [
+                    { fromUserId: userId, toUserId: otherUserId },
+                    { fromUserId: otherUserId, toUserId: userId },
+                ],
+            },
+        });
     }
 
     private async findOwnedIncomingRequest(
@@ -388,8 +425,8 @@ export class MatchRequestsService {
             id: request.id,
             eventId: request.eventId,
             status: request.status,
-            fromUser: this.toUserDto(request.fromUser),
-            toUser: this.toUserDto(request.toUser),
+            fromUser: this.toUserDto(request.fromUser, request.eventId),
+            toUser: this.toUserDto(request.toUser, request.eventId),
             createdAt: request.createdAt,
             respondedAt: request.respondedAt,
         };
@@ -406,7 +443,7 @@ export class MatchRequestsService {
 
         return {
             matchRequestId: request.id,
-            user: this.toUserDto(matchedUser),
+            user: this.toUserDto(matchedUser, request.eventId),
             contacts: (matchedUser.contacts ?? []).map((contact) => ({
                 id: contact.id,
                 type: contact.type,
@@ -416,11 +453,32 @@ export class MatchRequestsService {
         };
     }
 
-    private toUserDto(user: MatchRequestUserSelected): MatchRequestUserDto {
+    private toUserMatchResponse(
+        request: MatchRequestWithUsersProfile,
+        currentUserId: string,
+    ): UserMatchResponseDto {
+        return {
+            ...this.toMatchResponse(request, currentUserId),
+            eventId: request.event.id,
+            eventTitle: request.event.title,
+        };
+    }
+
+    private toUserDto(
+        user:
+            | MatchRequestUserSelected
+            | MatchRequestWithUsersProfile['fromUser'],
+        eventId: string,
+    ): MatchRequestUserDto {
+        const participation = user.eventParticipations.find(
+            (entry) => 'eventId' in entry && entry.eventId === eventId,
+        );
+
         return {
             id: user.id,
             fullName: user.fullName,
-            tags: user.eventParticipations[0]?.tags ?? [],
+            tags:
+                participation?.tags ?? user.eventParticipations[0]?.tags ?? [],
         };
     }
 }

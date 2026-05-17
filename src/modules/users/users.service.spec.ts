@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactType, UserStatus } from '@prisma/client';
+import { EventsService } from '../events/events.service';
 import { ImagesService } from '../images/images.service';
+import { MatchRequestsService } from '../match-requests/match-requests.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from './users.service';
 
@@ -29,6 +31,12 @@ describe('UsersService', () => {
         uploadImage: jest.fn(),
         deleteImage: jest.fn(),
     };
+    const eventsService = {
+        findParticipatingEvents: jest.fn(),
+    };
+    const matchRequestsService = {
+        findAllMatchesForUser: jest.fn(),
+    };
 
     const authUser = {
         id: 'user-1',
@@ -41,11 +49,18 @@ describe('UsersService', () => {
                 UsersService,
                 { provide: PrismaService, useValue: prisma },
                 { provide: ImagesService, useValue: imagesService },
+                { provide: EventsService, useValue: eventsService },
+                {
+                    provide: MatchRequestsService,
+                    useValue: matchRequestsService,
+                },
             ],
         }).compile();
 
         service = module.get(UsersService);
         jest.clearAllMocks();
+        eventsService.findParticipatingEvents.mockResolvedValue([]);
+        matchRequestsService.findAllMatchesForUser.mockResolvedValue([]);
     });
 
     describe('getMe', () => {
@@ -89,7 +104,15 @@ describe('UsersService', () => {
                 avatarImage: null,
                 createdAt,
                 updatedAt,
+                events: [],
+                matches: [],
             });
+            expect(eventsService.findParticipatingEvents).toHaveBeenCalledWith(
+                'user-1',
+            );
+            expect(
+                matchRequestsService.findAllMatchesForUser,
+            ).toHaveBeenCalledWith('user-1');
         });
 
         it('throws when user is not found', async () => {
@@ -113,6 +136,8 @@ describe('UsersService', () => {
             updatedAt: new Date('2025-01-02'),
             contacts: [],
             avatarImage: null,
+            events: [],
+            matches: [],
         };
 
         it('updates allowed fields and returns full profile', async () => {

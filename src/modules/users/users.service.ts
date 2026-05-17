@@ -6,7 +6,9 @@ import {
 import { UserContact } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/interfaces/jwt-payload.interface';
+import { EventsService } from '../events/events.service';
 import { ImagesService } from '../images/images.service';
+import { MatchRequestsService } from '../match-requests/match-requests.service';
 import { SetUserContactsDto } from './dto/set-user-contacts.dto';
 import { UserAvatarResponseDto } from './dto/user-avatar-response.dto';
 import { UserContactItemDto } from './dto/user-contact-item.dto';
@@ -19,9 +21,34 @@ export class UsersService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly imagesService: ImagesService,
+        private readonly eventsService: EventsService,
+        private readonly matchRequestsService: MatchRequestsService,
     ) {}
 
     async getMe(userId: string): Promise<UserResponseDto> {
+        const [user, events, matches] = await Promise.all([
+            this.findUserProfile(userId),
+            this.eventsService.findParticipatingEvents(userId),
+            this.matchRequestsService.findAllMatchesForUser(userId),
+        ]);
+
+        return {
+            id: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            status: user.status,
+            emailVerified: user.emailVerified,
+            emailVerifiedAt: user.emailVerifiedAt,
+            contacts: user.contacts.map((contact) => this.toResponse(contact)),
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            avatarImage: user.avatarImage || null,
+            events,
+            matches,
+        };
+    }
+
+    private async findUserProfile(userId: string) {
         const user = await this.prisma.user.findFirst({
             where: { id: userId, deletedAt: null },
             select: {
@@ -49,18 +76,7 @@ export class UsersService {
             throw new NotFoundException('User not found');
         }
 
-        return {
-            id: user.id,
-            email: user.email,
-            fullName: user.fullName,
-            status: user.status,
-            emailVerified: user.emailVerified,
-            emailVerifiedAt: user.emailVerifiedAt,
-            contacts: user.contacts.map((contact) => this.toResponse(contact)),
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            avatarImage: user.avatarImage || null,
-        };
+        return user;
     }
 
     async updateMe(

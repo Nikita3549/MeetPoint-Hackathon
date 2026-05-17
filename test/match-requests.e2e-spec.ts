@@ -156,21 +156,61 @@ describe('Match requests (e2e)', () => {
             });
     });
 
-    it('returns 409 for duplicate match request', async () => {
-        const { app, event, userB, tokenA } =
+    it('cannot send a second match request to the same user', async () => {
+        const { app, event, userA, userB, tokenA, tokenB } =
             await setupEventWithParticipants();
 
-        await request(app.getHttpServer())
+        const firstResponse = await request(app.getHttpServer())
             .post(`/v1/events/${event.id}/match-requests`)
             .set('Authorization', `Bearer ${tokenA}`)
             .send({ toUserId: userB.id })
             .expect(201);
 
+        expect(firstResponse.body.status).toBe('PENDING');
+        expect(firstResponse.body.fromUser.id).toBe(userA.id);
+        expect(firstResponse.body.toUser.id).toBe(userB.id);
+
         await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/match-requests/outgoing`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(1);
+                expect(response.body[0].toUser.id).toBe(userB.id);
+            });
+
+        await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/match-requests/incoming`)
+            .set('Authorization', `Bearer ${tokenB}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(1);
+                expect(response.body[0].fromUser.id).toBe(userA.id);
+            });
+
+        const duplicateResponse = await request(app.getHttpServer())
             .post(`/v1/events/${event.id}/match-requests`)
             .set('Authorization', `Bearer ${tokenA}`)
             .send({ toUserId: userB.id })
             .expect(409);
+
+        expect(duplicateResponse.body.message).toMatch(/already sent/i);
+
+        await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/match-requests/outgoing`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(1);
+            });
+
+        await request(app.getHttpServer())
+            .get(`/v1/events/${event.id}/match-requests/incoming`)
+            .set('Authorization', `Bearer ${tokenB}`)
+            .expect(200)
+            .expect((response) => {
+                expect(response.body).toHaveLength(1);
+            });
     });
 
     it('returns 400 when sending request to yourself', async () => {
@@ -244,6 +284,36 @@ describe('Match requests (e2e)', () => {
             .post(`/v1/events/${event.id}/match-requests/instant`)
             .set('Authorization', `Bearer ${tokenA}`)
             .send({ toUserId: userB.id })
+            .expect(409);
+    });
+
+    it('blocks repeated match requests after decline in either direction', async () => {
+        const { app, event, userA, userB, tokenA, tokenB } =
+            await setupEventWithParticipants();
+
+        const createResponse = await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({ toUserId: userB.id })
+            .expect(201);
+
+        const requestId = createResponse.body.id as string;
+
+        await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests/${requestId}/reject`)
+            .set('Authorization', `Bearer ${tokenB}`)
+            .expect(201);
+
+        await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests`)
+            .set('Authorization', `Bearer ${tokenA}`)
+            .send({ toUserId: userB.id })
+            .expect(409);
+
+        await request(app.getHttpServer())
+            .post(`/v1/events/${event.id}/match-requests`)
+            .set('Authorization', `Bearer ${tokenB}`)
+            .send({ toUserId: userA.id })
             .expect(409);
     });
 });
