@@ -24,7 +24,7 @@ describe('MatchRequestsService', () => {
             findFirst: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
-        },
+        } as const,
     };
 
     const userA = {
@@ -88,18 +88,24 @@ describe('MatchRequestsService', () => {
             ).rejects.toThrow(BadRequestException);
         });
 
-        it('throws when outgoing request already exists', async () => {
-            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
-                if ('eventId_fromUserId_toUserId' in args.where) {
-                    const key = args.where.eventId_fromUserId_toUserId;
-                    if (
-                        key.fromUserId === 'user-a' &&
-                        key.toUserId === 'user-b'
-                    ) {
-                        return matchRequestRecord;
-                    }
-                }
-                return null;
+        it('throws when sending a second request to the same user', async () => {
+            prisma.matchRequest.findFirst.mockResolvedValue(matchRequestRecord);
+
+            await expect(
+                service.create(userA, 'event-1', { toUserId: 'user-b' }),
+            ).rejects.toThrow(
+                new ConflictException('Match request already sent'),
+            );
+
+            expect(prisma.matchRequest.create).not.toHaveBeenCalled();
+        });
+
+        it('throws when users are already matched', async () => {
+            prisma.matchRequest.findFirst.mockResolvedValue({
+                ...matchRequestRecord,
+                fromUserId: 'user-b',
+                toUserId: 'user-a',
+                status: MatchRequestStatus.ACCEPTED,
             });
 
             await expect(
@@ -107,25 +113,27 @@ describe('MatchRequestsService', () => {
             ).rejects.toThrow(ConflictException);
         });
 
-        it('throws when users are already matched', async () => {
-            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
-                if ('eventId_fromUserId_toUserId' in args.where) {
-                    const key = args.where.eventId_fromUserId_toUserId;
-                    if (
-                        key.fromUserId === 'user-b' &&
-                        key.toUserId === 'user-a'
-                    ) {
-                        return {
-                            ...matchRequestRecord,
-                            status: MatchRequestStatus.ACCEPTED,
-                        };
-                    }
-                }
-                return null;
+        it('throws when match request was declined between users', async () => {
+            prisma.matchRequest.findFirst.mockResolvedValue({
+                ...matchRequestRecord,
+                status: MatchRequestStatus.REJECTED,
             });
 
             await expect(
                 service.create(userA, 'event-1', { toUserId: 'user-b' }),
+            ).rejects.toThrow(ConflictException);
+        });
+
+        it('throws when other user already declined via reverse request', async () => {
+            prisma.matchRequest.findFirst.mockResolvedValue({
+                ...matchRequestRecord,
+                fromUserId: 'user-b',
+                toUserId: 'user-a',
+                status: MatchRequestStatus.REJECTED,
+            });
+
+            await expect(
+                service.create(userB, 'event-1', { toUserId: 'user-a' }),
             ).rejects.toThrow(ConflictException);
         });
 
@@ -148,18 +156,7 @@ describe('MatchRequestsService', () => {
                     { id: 'tag-1', name: 'backend' },
                 ]),
             };
-            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
-                if ('eventId_fromUserId_toUserId' in args.where) {
-                    const key = args.where.eventId_fromUserId_toUserId;
-                    if (
-                        key.fromUserId === 'user-b' &&
-                        key.toUserId === 'user-a'
-                    ) {
-                        return reverseRequest;
-                    }
-                }
-                return null;
-            });
+            prisma.matchRequest.findFirst.mockResolvedValue(reverseRequest);
             prisma.matchRequest.update.mockResolvedValue(accepted);
 
             await expect(
@@ -180,7 +177,7 @@ describe('MatchRequestsService', () => {
         });
 
         it('creates new match request', async () => {
-            prisma.matchRequest.findUnique.mockResolvedValue(null);
+            prisma.matchRequest.findFirst.mockResolvedValue(null);
 
             await expect(
                 service.create(userA, 'event-1', { toUserId: 'user-b' }),
@@ -324,7 +321,7 @@ describe('MatchRequestsService', () => {
                 status: MatchRequestStatus.ACCEPTED,
                 respondedAt: new Date('2025-01-02'),
             };
-            prisma.matchRequest.findUnique.mockResolvedValue(null);
+            prisma.matchRequest.findFirst.mockResolvedValue(null);
             prisma.matchRequest.create.mockResolvedValue(accepted);
 
             await expect(
@@ -369,18 +366,7 @@ describe('MatchRequestsService', () => {
                 status: MatchRequestStatus.ACCEPTED,
                 respondedAt: new Date('2025-01-02'),
             };
-            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
-                if ('eventId_fromUserId_toUserId' in args.where) {
-                    const key = args.where.eventId_fromUserId_toUserId;
-                    if (
-                        key.fromUserId === 'user-b' &&
-                        key.toUserId === 'user-a'
-                    ) {
-                        return reverseRequest;
-                    }
-                }
-                return null;
-            });
+            prisma.matchRequest.findFirst.mockResolvedValue(reverseRequest);
             prisma.matchRequest.update.mockResolvedValue(accepted);
 
             await expect(
@@ -402,21 +388,34 @@ describe('MatchRequestsService', () => {
             );
         });
 
+        it('accepts previously declined request on instant match', async () => {
+            const rejected = {
+                ...matchRequestRecord,
+                status: MatchRequestStatus.REJECTED,
+            };
+            const accepted = {
+                ...rejected,
+                status: MatchRequestStatus.ACCEPTED,
+                respondedAt: new Date('2025-01-02'),
+            };
+            prisma.matchRequest.findFirst.mockResolvedValue(rejected);
+            prisma.matchRequest.update.mockResolvedValue(accepted);
+
+            await expect(
+                service.matchWithoutConfirm(userA, 'event-1', {
+                    toUserId: 'user-b',
+                }),
+            ).resolves.toEqual(
+                expect.objectContaining({
+                    status: MatchRequestStatus.ACCEPTED,
+                }),
+            );
+        });
+
         it('throws when users are already matched', async () => {
-            prisma.matchRequest.findUnique.mockImplementation(async (args) => {
-                if ('eventId_fromUserId_toUserId' in args.where) {
-                    const key = args.where.eventId_fromUserId_toUserId;
-                    if (
-                        key.fromUserId === 'user-a' &&
-                        key.toUserId === 'user-b'
-                    ) {
-                        return {
-                            ...matchRequestRecord,
-                            status: MatchRequestStatus.ACCEPTED,
-                        };
-                    }
-                }
-                return null;
+            prisma.matchRequest.findFirst.mockResolvedValue({
+                ...matchRequestRecord,
+                status: MatchRequestStatus.ACCEPTED,
             });
 
             await expect(

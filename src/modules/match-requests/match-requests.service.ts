@@ -85,37 +85,29 @@ export class MatchRequestsService {
         await this.ensureParticipant(eventId, user.id);
         await this.ensureParticipant(eventId, dto.toUserId);
 
-        const existingOutgoing = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: user.id,
-                    toUserId: dto.toUserId,
-                },
-            },
-        });
+        const pairRequest = await this.findPairMatchRequest(
+            eventId,
+            user.id,
+            dto.toUserId,
+        );
 
-        if (existingOutgoing) {
-            throw new ConflictException('Match request already sent');
-        }
+        if (pairRequest) {
+            if (pairRequest.status === MatchRequestStatus.ACCEPTED) {
+                throw new ConflictException('Users are already matched');
+            }
 
-        const reverseRequest = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: dto.toUserId,
-                    toUserId: user.id,
-                },
-            },
-        });
+            if (pairRequest.status === MatchRequestStatus.REJECTED) {
+                throw new ConflictException(
+                    'Match request was declined between these users',
+                );
+            }
 
-        if (reverseRequest?.status === MatchRequestStatus.ACCEPTED) {
-            throw new ConflictException('Users are already matched');
-        }
+            if (pairRequest.fromUserId === user.id) {
+                throw new ConflictException('Match request already sent');
+            }
 
-        if (reverseRequest?.status === MatchRequestStatus.PENDING) {
             const accepted = await this.prisma.matchRequest.update({
-                where: { id: reverseRequest.id },
+                where: { id: pairRequest.id },
                 data: {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt: new Date(),
@@ -269,39 +261,19 @@ export class MatchRequestsService {
 
         const now = new Date();
 
-        const outgoing = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: user.id,
-                    toUserId: dto.toUserId,
-                },
-            },
-        });
+        const pairRequest = await this.findPairMatchRequest(
+            eventId,
+            user.id,
+            dto.toUserId,
+        );
 
-        if (outgoing?.status === MatchRequestStatus.ACCEPTED) {
-            throw new ConflictException('Users are already matched');
-        }
+        if (pairRequest) {
+            if (pairRequest.status === MatchRequestStatus.ACCEPTED) {
+                throw new ConflictException('Users are already matched');
+            }
 
-        const reverse = await this.prisma.matchRequest.findUnique({
-            where: {
-                eventId_fromUserId_toUserId: {
-                    eventId,
-                    fromUserId: dto.toUserId,
-                    toUserId: user.id,
-                },
-            },
-        });
-
-        if (reverse?.status === MatchRequestStatus.ACCEPTED) {
-            throw new ConflictException('Users are already matched');
-        }
-
-        const existingRequest = outgoing ?? reverse;
-
-        if (existingRequest) {
             const updated = await this.prisma.matchRequest.update({
-                where: { id: existingRequest.id },
+                where: { id: pairRequest.id },
                 data: {
                     status: MatchRequestStatus.ACCEPTED,
                     respondedAt: now,
@@ -324,6 +296,22 @@ export class MatchRequestsService {
         });
 
         return this.toResponse(created);
+    }
+
+    private async findPairMatchRequest(
+        eventId: string,
+        userId: string,
+        otherUserId: string,
+    ): Promise<MatchRequest | null> {
+        return this.prisma.matchRequest.findFirst({
+            where: {
+                eventId,
+                OR: [
+                    { fromUserId: userId, toUserId: otherUserId },
+                    { fromUserId: otherUserId, toUserId: userId },
+                ],
+            },
+        });
     }
 
     private async findOwnedIncomingRequest(
