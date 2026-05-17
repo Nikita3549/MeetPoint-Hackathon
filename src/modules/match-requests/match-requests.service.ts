@@ -80,10 +80,7 @@ const matchRequestUserProfileSelect = {
         },
     },
     contacts: {
-        orderBy: [
-            { type: 'asc' as const },
-            { createdAt: 'asc' as const },
-        ],
+        orderBy: [{ type: 'asc' as const }, { createdAt: 'asc' as const }],
     },
 } satisfies Prisma.UserSelect;
 
@@ -253,7 +250,9 @@ export class MatchRequestsService {
         return this.toResponse(updated);
     }
 
-    async findAllMatchesForUser(userId: string): Promise<UserMatchResponseDto[]> {
+    async findAllMatchesForUser(
+        userId: string,
+    ): Promise<UserMatchResponseDto[]> {
         const requests = await this.prisma.matchRequest.findMany({
             where: {
                 status: MatchRequestStatus.ACCEPTED,
@@ -466,7 +465,9 @@ export class MatchRequestsService {
     }
 
     private toUserDto(
-        user: MatchRequestUserSelected | MatchRequestWithUsersProfile['fromUser'],
+        user:
+            | MatchRequestUserSelected
+            | MatchRequestWithUsersProfile['fromUser'],
         eventId: string,
     ): MatchRequestUserDto {
         const participation = user.eventParticipations.find(
@@ -476,7 +477,8 @@ export class MatchRequestsService {
         return {
             id: user.id,
             fullName: user.fullName,
-            tags: participation?.tags ?? user.eventParticipations[0]?.tags ?? [],
+            tags:
+                participation?.tags ?? user.eventParticipations[0]?.tags ?? [],
         };
     }
 }

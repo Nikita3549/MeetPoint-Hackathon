@@ -9,7 +9,7 @@ describe('Users (e2e)', () => {
     it('returns participating events and matches in GET /users/me', async () => {
         const { app, login, seedUsers, createEvent, registerForEvent } =
             getE2eFixture();
-        const { userA, userB } = await seedUsers();
+        const { userB } = await seedUsers();
         const organizerToken = await login('organizer@example.com');
         const tokenA = await login('user-a@example.com');
         const tokenB = await login('user-b@example.com');
