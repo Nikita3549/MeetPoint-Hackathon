@@ -1,7 +1,7 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserStatus } from '@prisma/client';
+import { ContactType, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from './auth.service';
@@ -122,6 +122,7 @@ describe('AuthService', () => {
     });
 
     it('creates user and returns access token on register', async () => {
+        jest.spyOn(Math, 'random').mockReturnValue(0);
         prisma.user.findUnique.mockResolvedValue(null);
         (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
         prisma.user.create.mockResolvedValue(activeUser);
@@ -129,8 +130,8 @@ describe('AuthService', () => {
 
         await expect(
             service.register({
-                email: 'user@example.com',
-                password: 'secret',
+                username: 'johndoe',
+                contacts: [{ type: ContactType.TELEGRAM, value: '@jane' }],
             }),
         ).resolves.toEqual({
             accessToken: 'token',
@@ -144,71 +145,54 @@ describe('AuthService', () => {
             ],
         });
 
-        expect(bcrypt.hash).toHaveBeenCalledWith('secret', 10);
+        expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
         expect(prisma.user.create).toHaveBeenCalledWith({
             data: {
-                email: 'user@example.com',
+                email: 'user100@example.com',
                 hashedPassword: 'hashed',
-                fullName: 'user',
+                fullName: 'johndoe',
                 lastLoginAt: expect.any(Date),
+                contacts: {
+                    create: [{ type: ContactType.TELEGRAM, value: '@jane' }],
+                },
             },
             include: expect.any(Object),
         });
     });
 
     it('throws when email is already registered', async () => {
+        jest.spyOn(Math, 'random').mockReturnValue(0);
         prisma.user.findUnique.mockResolvedValue({ id: 'user-1' });
 
         await expect(
             service.register({
-                email: 'user@example.com',
-                password: 'secret',
+                username: 'johndoe',
+                contacts: [],
             }),
         ).rejects.toThrow(ConflictException);
     });
 
-    it('uses fallback name when email local part is empty', async () => {
+    it('skips empty contact values on register', async () => {
+        jest.spyOn(Math, 'random').mockReturnValue(0);
         prisma.user.findUnique.mockResolvedValue(null);
         (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
         prisma.user.create.mockResolvedValue({
             ...activeUser,
-            email: '@company.com',
-            fullName: 'User',
+            contacts: [],
         });
         jwtService.signAsync.mockResolvedValue('token');
 
         await service.register({
-            email: '@company.com',
-            password: 'secret',
+            username: 'johndoe',
+            contacts: [{ type: ContactType.EMAIL, value: '   ' }],
         });
 
         expect(prisma.user.create).toHaveBeenCalledWith(
             expect.objectContaining({
                 data: expect.objectContaining({
-                    fullName: 'User',
+                    contacts: { create: [] },
                 }),
             }),
         );
-    });
-
-    it('returns empty contacts for newly registered user', async () => {
-        prisma.user.findUnique.mockResolvedValue(null);
-        (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-        prisma.user.create.mockResolvedValue({
-            ...activeUser,
-            contacts: [],
-        });
-        jwtService.signAsync.mockResolvedValue('token');
-
-        await expect(
-            service.register({
-                email: 'new@example.com',
-                password: 'secret',
-            }),
-        ).resolves.toEqual({
-            accessToken: 'token',
-            name: 'Jane Doe',
-            contacts: [],
-        });
     });
 });

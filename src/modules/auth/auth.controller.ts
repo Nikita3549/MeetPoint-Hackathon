@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -29,10 +30,10 @@ export class AuthController {
     @Public()
     @Post('register')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Register with email and password' })
+    @ApiOperation({ summary: 'Register with username and contacts' })
     @ApiOkResponse({ type: LoginResponseDto })
     @ApiConflictResponse({ description: 'Email already registered' })
-    register(@Body() dto: LoginDto): Promise<LoginResponseDto> {
+    register(@Body() dto: RegisterDto): Promise<LoginResponseDto> {
         return this.authService.register(dto);
     }
 }

@@ -11,9 +11,7 @@ https://hack-umms-team-3-backend-virtual-machine-2311dc.vm.prodcontest.com/api/d
 | Отчёт | Файл |
 | --- | --- |
 | Юнит-тесты (сводка + сценарии) | `coverage/test-report.html` |
-| E2E (сводка + сценарии) | `coverage/e2e/test-report.html` |
-| Общий вход (локально) | `coverage/index-dashboard.html` |
-| Построчно Istanbul | `coverage/index.html`, `coverage/e2e/index.html` |
+| E2E (сводка + сценарии) | `coverage/test-report-e2e.html` |
 
 
 Порог unit: строки ≥ 85%, иначе pipeline падает.

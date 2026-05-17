@@ -29,7 +29,7 @@ describe('AuthController', () => {
     });
 
     it('delegates register to service', async () => {
-        const dto = { email: 'user@example.com', password: 'secret' };
+        const dto = { username: 'johndoe', contacts: [] };
         const response = { accessToken: 'token' };
         authService.register.mockResolvedValue(response);
 

@@ -1,4 +1,4 @@
-import { UserStatus } from '@prisma/client';
+import { ContactType, UserStatus } from '@prisma/client';
 import request from 'supertest';
 import { createUser, DEFAULT_PASSWORD } from './helpers/factories';
 import { getE2eFixture, registerE2eHooks } from './helpers/setup-e2e';
@@ -68,13 +68,18 @@ describe('Auth (e2e)', () => {
     });
 
     it('POST /v1/auth/register creates user and returns access token', async () => {
-        const { app } = getE2eFixture();
+        const { app, prisma } = getE2eFixture();
 
         const response = await request(app.getHttpServer())
             .post('/v1/auth/register')
             .send({
-                email: 'new-user@example.com',
-                password: DEFAULT_PASSWORD,
+                username: 'new-user',
+                contacts: [
+                    {
+                        type: ContactType.TELEGRAM,
+                        value: '@newuser',
+                    },
+                ],
             })
             .expect(200);
 
@@ -82,25 +87,20 @@ describe('Auth (e2e)', () => {
             expect.objectContaining({
                 accessToken: expect.any(String),
                 name: 'new-user',
-                contacts: [],
+                contacts: [
+                    expect.objectContaining({
+                        type: ContactType.TELEGRAM,
+                        value: '@newuser',
+                    }),
+                ],
             }),
         );
-    });
 
-    it('POST /v1/auth/register returns 409 for duplicate email', async () => {
-        const { app, prisma } = getE2eFixture();
-        await createUser(prisma, {
-            email: 'user@example.com',
-            fullName: 'Existing User',
+        const createdUser = await prisma.user.findFirst({
+            where: { fullName: 'new-user' },
         });
 
-        await request(app.getHttpServer())
-            .post('/v1/auth/register')
-            .send({
-                email: 'user@example.com',
-                password: DEFAULT_PASSWORD,
-            })
-            .expect(409);
+        expect(createdUser?.email).toMatch(/^user\d{3,4}@example\.com$/);
     });
 
     it('GET /v1/users/me returns profile with valid token', async () => {
