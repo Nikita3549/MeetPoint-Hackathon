@@ -4,6 +4,10 @@
 
 https://hack-umms-team-3-backend-virtual-machine-2311dc.vm.prodcontest.com/api/docs
 
+**Архитектура/Карта репозитория**
+
+Подробно в файле: docs/ARCHITECTURE.md
+
 **Тесты**
 
 Покрытие — в GitLab CI (джобы `unit-tests`, `e2e-tests`). Скачайте артефакты и откройте:
