@@ -18,9 +18,12 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --runInBand --coverage",
+    "test:report": "npm run test:cov && node scripts/generate-test-report.mjs unit",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "test:e2e:cov": "jest --config ./test/jest-e2e.json --runInBand --coverage",
+    "test:e2e:report": "npm run test:e2e:cov && node scripts/generate-test-report.mjs e2e",
+    "test:reports": "npm run test:cov && npm run test:e2e:cov && node scripts/generate-test-report.mjs all",
     "db:seed": "prisma db seed"
   },
   "prisma": {
@@ -105,6 +108,7 @@
     "coverageReporters": [
       "text",
       "text-summary",
+      "json-summary",
       "lcov",
       "cobertura",
       "html"

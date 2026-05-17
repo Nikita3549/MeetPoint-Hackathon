@@ -4,6 +4,20 @@
 
 https://hack-umms-team-3-backend-virtual-machine-2311dc.vm.prodcontest.com/api/docs
 
+**Тесты**
+
+Покрытие — в GitLab CI (джобы `unit-tests`, `e2e-tests`). Скачайте артефакты и откройте:
+
+| Отчёт | Файл |
+| --- | --- |
+| Юнит-тесты (сводка + сценарии) | `coverage/test-report.html` |
+| E2E (сводка + сценарии) | `coverage/e2e/test-report.html` |
+| Общий вход (локально) | `coverage/index-dashboard.html` |
+| Построчно Istanbul | `coverage/index.html`, `coverage/e2e/index.html` |
+
+
+Порог unit: строки ≥ 85%, иначе pipeline падает.
+
 **Проверка запросов (HTTP Client):**
 
 Открыть только [`http/jury.http`](http/jury.http) — 36 шагов, каждый endpoint один раз.

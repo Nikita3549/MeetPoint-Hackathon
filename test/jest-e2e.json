@@ -29,5 +29,12 @@
   ],
   "coverageDirectory": "<rootDir>/coverage/e2e",
   "coverageProvider": "v8",
-  "coverageReporters": ["text", "text-summary", "lcov", "cobertura", "html"]
+  "coverageReporters": [
+    "text",
+    "text-summary",
+    "json-summary",
+    "lcov",
+    "cobertura",
+    "html"
+  ]
 }
