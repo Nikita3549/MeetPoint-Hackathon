@@ -1,3 +1,9 @@
+1st place! 🎉🎉🎉
+---
+
+**We are proud to have taken first place at the hackathon.**
+
+
 **Swagger**
 
 Можно получить по ссылке:
